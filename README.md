@@ -1,7 +1,13 @@
 # Web UI Skills Bundle
 
-This repository bundles three Codex skills for building professional web applications:
+This repository bundles Codex skills for building professional web applications.
 
+## Included skills
+
+- `preact-ui`
+- `scss-system`
+- `web-accessibility-standards`
+- `a11y-review`
 - `web-performance`
 - `web-i18n`
 - `web-testing`
@@ -16,8 +22,9 @@ Run the installer from the repository root:
 
 By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
 
-## What's included
+## Notes
 
-- `web-performance`: Core Web Vitals, loading, rendering, images, and asset delivery.
-- `web-i18n`: locale-aware formatting, `lang` / `dir`, RTL, and pluralization.
-- `web-testing`: Playwright-based test strategy, regression coverage, visual comparisons, and CI reporting.
+- `web-accessibility-standards` covers implementation work.
+- `a11y-review` covers audits and QA.
+- `preact-ui` and `scss-system` cover component and styling architecture.
+- `web-performance`, `web-i18n`, and `web-testing` cover the missing production concerns.

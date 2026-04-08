@@ -7,7 +7,17 @@ skills_dir="$codex_home/skills"
 
 mkdir -p "$skills_dir"
 
-for skill in web-performance web-i18n web-testing; do
+skills=(
+  preact-ui
+  scss-system
+  web-accessibility-standards
+  a11y-review
+  web-performance
+  web-i18n
+  web-testing
+)
+
+for skill in "${skills[@]}"; do
   rm -rf "$skills_dir/$skill"
   cp -R "$repo_dir/skills/$skill" "$skills_dir/$skill"
 done
