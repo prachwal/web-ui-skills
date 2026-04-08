@@ -16,6 +16,34 @@ This repository bundles Codex skills for building professional web applications.
 
 ## Install
 
+### npx (recommended)
+
+Install skills for all supported tools at once:
+
+```bash
+npx web-ui-skills
+```
+
+Or target specific tools:
+
+```bash
+npx web-ui-skills --codex      # ~/.codex/skills
+npx web-ui-skills --claude     # ~/.claude/skills
+npx web-ui-skills --copilot    # ~/.copilot/skills
+npx web-ui-skills --kilo       # ~/.kilocode/skills
+
+npx web-ui-skills --codex --claude   # multiple tools at once
+```
+
+Additional options:
+
+```bash
+npx web-ui-skills --list   # show available skills
+npx web-ui-skills --help   # show help
+```
+
+### Shell script (legacy)
+
 Run the installer from the repository root:
 
 ```bash
