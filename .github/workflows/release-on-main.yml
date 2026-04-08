@@ -48,3 +48,12 @@ jobs:
             --title "v${{ steps.bump.outputs.version }}" \
             --generate-notes \
             --verify-tag
+
+      - name: Dispatch npm publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run npm-publish.yml \
+            --repo "${{ github.repository }}" \
+            --ref main \
+            -f release_tag="v${{ steps.bump.outputs.version }}"
