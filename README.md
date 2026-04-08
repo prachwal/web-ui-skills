@@ -11,6 +11,7 @@ This repository bundles Codex skills for building professional web applications.
 - `web-performance`
 - `web-i18n`
 - `web-testing`
+- `web-security`
 
 ## Install
 
@@ -27,4 +28,4 @@ By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
 - `preact-ui` and `scss-system` cover component and styling architecture.
-- `web-performance`, `web-i18n`, and `web-testing` cover the missing production concerns.
+- `web-performance`, `web-i18n`, `web-testing`, and `web-security` cover the missing production concerns.

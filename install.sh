@@ -15,6 +15,7 @@ skills=(
   web-performance
   web-i18n
   web-testing
+  web-security
 )
 
 for skill in "${skills[@]}"; do
