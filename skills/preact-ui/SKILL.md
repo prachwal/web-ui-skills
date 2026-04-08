@@ -94,6 +94,37 @@ src/
 - Never put business logic inside a View component — move it to the ViewModel.
 - Memoize with `memo()` only when profiling identifies a bottleneck.
 
+## Professional component patterns
+
+### Splitting heuristics
+Split a component when it has more than one independently testable concern, when its sub-trees could change independently, or when it is reused across features.
+
+### TypeScript props
+- Define explicit interfaces — never use `any` or untyped prop objects.
+- Extend `Preact.JSX.InputHTMLAttributes<HTMLElement>` for low-level wrappers.
+- Use union types for `variant`, `size`, and similar constrained props.
+
+### Compound components
+Group tightly related sub-components (e.g. `Tabs.Tab`, `Tabs.Panel`) under a shared namespace and use a private Context to coordinate state between them. Exposes a clean API without props drilling.
+
+### Render props / children as function
+Pass `renderItem: (item: T) => ComponentChildren` when the parent owns list/async behavior but the consumer controls individual rendering.
+
+### Error boundaries
+Wrap every route and major feature in a class-based `ErrorBoundary`. Place them at feature seams, not around individual atoms.
+
+### Context API
+Use only for cross-cutting concerns: auth user, locale, theme, feature flags. Do **not** use Context for feature data flow — signals and props are simpler and more efficient.
+
+### Portals
+Use `createPortal` from `preact/compat` for modals, tooltips, and dropdowns that must escape overflow or z-index stacking contexts.
+
+### Controlled vs uncontrolled inputs
+Prefer controlled (signal-bound) for validated forms; prefer uncontrolled (`useRef` + `FormData`) for simple, low-interactivity forms.
+
+### Forward refs
+Use `forwardRef` + `useImperativeHandle` for focus management or third-party DOM integration. Avoid for general data passing.
+
 ## Forms
 
 - Use controlled inputs when validation or live feedback is needed; use signals for field values.
@@ -158,6 +189,7 @@ src/
 
 - [references/mvvm.md](references/mvvm.md): MVVM architecture patterns
 - [references/signals.md](references/signals.md): signals, computed, and effects
+- [references/component-patterns.md](references/component-patterns.md): professional component design — compound components, error boundaries, portals, memoization, TypeScript props
 - [references/layout.md](references/layout.md): page structure and composition
 - [references/state.md](references/state.md): state, hooks, and data flow
 - [references/forms.md](references/forms.md): form patterns and validation
