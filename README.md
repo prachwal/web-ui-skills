@@ -51,6 +51,10 @@ Run the installer from the repository root:
 
 By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
 
+## Release publishing
+
+This repo publishes to npm from GitHub Releases. Create a release with a tag that matches the package version, for example `v1.0.1`. The workflow validates that the release tag and `package.json` version match, then runs `npm publish --access public` with the `NPM_TOKEN` GitHub secret.
+
 ## Local test
 
 ```bash
