@@ -1,6 +1,6 @@
 {
   "name": "web-ui-skills",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Web UI skills bundle for Codex, Claude, Copilot, and Kilo CLI tools",
   "bin": {
     "web-ui-skills": "./bin/install.js"
