@@ -51,6 +51,15 @@ Run the installer from the repository root:
 
 By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
 
+## Local test
+
+```bash
+CODEX_HOME=/tmp/web-ui-skills-test-home node bin/install.js --codex
+CODEX_HOME=/tmp/web-ui-skills-test-home ./install.sh --codex
+```
+
+Run `npx web-ui-skills --list` to inspect the bundle without installing anything.
+
 ## Notes
 
 - `web-accessibility-standards` covers implementation work.
