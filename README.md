@@ -55,6 +55,8 @@ By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
 
 This repo publishes to npm from GitHub Releases using Trusted Publishing. Configure `web-ui-skills` as a trusted publisher in npmjs.com with the GitHub Actions workflow filename `.github/workflows/npm-publish.yml`. Create a release with a tag that matches the package version, for example `v1.0.4`. The workflow validates that the release tag and `package.json` version match, upgrades npm to a Trusted Publishing-compatible version, then publishes without an npm token secret.
 
+Releases are created automatically from `main` by `.github/workflows/release-on-main.yml`. Each push to `main` that is not already a release commit bumps the patch version, pushes the version commit and tag, and creates a GitHub release. The existing npm publishing workflow then runs from that release.
+
 ## Version prep
 
 For a new release:
@@ -62,6 +64,7 @@ For a new release:
 1. Bump `package.json` and `package-lock.json` together.
 2. Keep the release notes focused on the skills bundle and installer changes.
 3. Avoid adding secrets or registry credentials to the repository.
+4. Let the automation handle the patch bump and release from `main`.
 
 ## Local test
 

@@ -1,0 +1,50 @@
+name: Auto release from main
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip release]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          NEW_VERSION="$(npm version patch -m "chore(release): %s [skip release]")"
+          echo "version=${NEW_VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Push release commit and tag
+        run: |
+          git push origin HEAD:main --follow-tags
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.bump.outputs.version }}" \
+            --repo "${{ github.repository }}" \
+            --title "v${{ steps.bump.outputs.version }}" \
+            --generate-notes \
+            --verify-tag
