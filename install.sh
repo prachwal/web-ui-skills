@@ -16,6 +16,7 @@ skills=(
   web-i18n
   web-testing
   web-security
+  netlify-serverless
 )
 
 for skill in "${skills[@]}"; do
