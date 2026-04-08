@@ -1,6 +1,6 @@
 {
   "name": "web-ui-skills",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Web UI skills bundle for Codex, Claude, Copilot, and Kilo CLI tools",
   "bin": {
     "web-ui-skills": "./bin/install.js"
@@ -8,10 +8,13 @@
   "files": [
     "bin",
     "skills",
-    "install.sh"
+    "install.sh",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "install-skills": "node bin/install.js"
+    "install-skills": "node bin/install.js",
+    "list-skills": "node bin/install.js --list"
   },
   "keywords": [
     "codex",

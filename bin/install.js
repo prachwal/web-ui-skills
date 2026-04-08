@@ -2,10 +2,9 @@
 'use strict';
 
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
+const path = require('path');
 
-// ── skill list ────────────────────────────────────────────────────────────────
 const SKILLS = [
   'preact-ui',
   'scss-system',
@@ -15,22 +14,37 @@ const SKILLS = [
   'web-i18n',
   'web-testing',
   'web-security',
-  'netlify-serverless',
 ];
 
-// ── tool → target directory ───────────────────────────────────────────────────
+function resolveToolDir(toolName) {
+  const homeOverrides = {
+    codex: process.env.CODEX_HOME,
+    claude: process.env.CLAUDE_HOME,
+    copilot: process.env.COPILOT_HOME,
+    kilo: process.env.KILOCODE_HOME,
+  };
+
+  const defaults = {
+    codex: path.join(os.homedir(), '.codex'),
+    claude: path.join(os.homedir(), '.claude'),
+    copilot: path.join(os.homedir(), '.copilot'),
+    kilo: path.join(os.homedir(), '.kilocode'),
+  };
+
+  return path.join(homeOverrides[toolName] || defaults[toolName], 'skills');
+}
+
 const TOOLS = {
-  codex:   path.join(os.homedir(), '.codex',    'skills'),
-  claude:  path.join(os.homedir(), '.claude',   'skills'),
-  copilot: path.join(os.homedir(), '.copilot',  'skills'),
-  kilo:    path.join(os.homedir(), '.kilocode', 'skills'),
+  codex: resolveToolDir('codex'),
+  claude: resolveToolDir('claude'),
+  copilot: resolveToolDir('copilot'),
+  kilo: resolveToolDir('kilo'),
 };
 
-// ── helpers ───────────────────────────────────────────────────────────────────
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-    const srcPath  = path.join(src,  entry.name);
+    const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
@@ -40,44 +54,40 @@ function copyDir(src, dest) {
   }
 }
 
-function installSkills(toolName, targetDir) {
+function installForTool(toolName) {
+  const targetDir = TOOLS[toolName];
   const skillsSource = path.join(__dirname, '..', 'skills');
 
   if (!fs.existsSync(skillsSource)) {
-    console.error(`  ✗ Skills source directory not found: ${skillsSource}`);
+    console.error(`✗ Skills source directory not found: ${skillsSource}`);
     return false;
   }
 
+  fs.mkdirSync(targetDir, { recursive: true });
+
   let installed = 0;
   for (const skill of SKILLS) {
-    const src  = path.join(skillsSource, skill);
+    const src = path.join(skillsSource, skill);
     const dest = path.join(targetDir, skill);
     if (!fs.existsSync(src)) {
-      console.warn(`  ⚠ Skill not found, skipping: ${skill}`);
+      console.warn(`⚠ Skill not found, skipping: ${skill}`);
       continue;
     }
-    // Remove old version then copy fresh
-    if (fs.existsSync(dest)) {
-      fs.rmSync(dest, { recursive: true, force: true });
-    }
+    fs.rmSync(dest, { recursive: true, force: true });
     copyDir(src, dest);
-    installed++;
+    installed += 1;
   }
 
-  console.log(`  ✓ Installed ${installed} skill(s) to ${targetDir}`);
+  console.log(`✓ Installed ${installed} skill(s) to ${targetDir}`);
   return true;
 }
 
-// ── argument parsing ──────────────────────────────────────────────────────────
-const args = process.argv.slice(2);
-const showHelp = args.includes('--help') || args.includes('-h');
-
-if (showHelp) {
+function printHelp() {
   console.log(`
-Usage:  npx web-ui-skills [options]
+Usage: npx web-ui-skills [options]
 
 Options:
-  --all        Install for all supported tools (default when no tool flag given)
+  --all        Install for all supported tools (default when no tool flag is given)
   --codex      Install to ~/.codex/skills
   --claude     Install to ~/.claude/skills
   --copilot    Install to ~/.copilot/skills
@@ -87,38 +97,34 @@ Options:
 
 Examples:
   npx web-ui-skills                 # install for all tools
+  npx web-ui-skills --codex         # install only for Codex
   npx web-ui-skills --claude        # install only for Claude Code
   npx web-ui-skills --codex --kilo  # install for Codex and Kilo
 `);
+}
+
+const args = process.argv.slice(2);
+if (args.includes('-h') || args.includes('--help')) {
+  printHelp();
   process.exit(0);
 }
 
 if (args.includes('--list')) {
   console.log('\nAvailable skills:\n');
-  SKILLS.forEach(s => console.log(`  • ${s}`));
+  SKILLS.forEach((skill) => console.log(`  • ${skill}`));
   console.log();
   process.exit(0);
 }
 
-// Determine which tools the user wants
-const requestedTools = Object.keys(TOOLS).filter(t => args.includes(`--${t}`));
+const requestedTools = Object.keys(TOOLS).filter((tool) => args.includes(`--${tool}`));
 const targetTools = requestedTools.length > 0 ? requestedTools : Object.keys(TOOLS);
 
-// ── main ──────────────────────────────────────────────────────────────────────
 console.log('\n🚀 web-ui-skills installer\n');
-
 let ok = true;
 for (const tool of targetTools) {
-  const targetDir = TOOLS[tool];
-  console.log(`Installing for ${tool} → ${targetDir}`);
-  if (!installSkills(tool, targetDir)) {
-    ok = false;
-  }
+  console.log(`Installing for ${tool} → ${TOOLS[tool]}`);
+  if (!installForTool(tool)) ok = false;
 }
 
-if (ok) {
-  console.log('\n✅ Done!\n');
-} else {
-  console.error('\n⚠ Installation completed with warnings.\n');
-  process.exit(1);
-}
+if (!ok) process.exit(1);
+console.log('\n✅ Done!\n');
