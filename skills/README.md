@@ -15,13 +15,18 @@ Repository-local guidance for building TypeScript web apps, frontend workflows, 
 - `web-accessibility-standards` for accessible implementation and `a11y-review` for audits.
 - `web-performance` for loading speed, Core Web Vitals, responsive loading, and image optimization.
 - `web-i18n` for locale-aware formatting, language tags, pluralization, and RTL.
-- `web-testing` for Playwright E2E, regression, CI, and visual testing strategy.
+- `web-testing` for Playwright E2E, regression, browser compatibility, progressive enhancement, and CI reporting.
 - `web-security` for XSS, CSP, token storage, secure links, and frontend security checks.
 - `web-seo-metadata` for route metadata, canonical URLs, social previews, sitemaps, and structured data.
 - `web-forms` for accessible forms, validation, async submit states, errors, and spam resistance.
 - `web-data-fetching` for loading/error/empty states, cancellation, retry, cache invalidation, and typed API boundaries.
 - `web-observability` for frontend errors, analytics events, Core Web Vitals, and privacy-safe telemetry.
 - `web-deployment` for env vars, preview deploys, redirects, cache headers, SPA fallback, and CI release checks.
+- `web-auth-ux` for login, MFA, session expiry, password reset, and role/permission UI flows.
+- `web-privacy` for consent, cookie banners, opt-in/opt-out analytics, PII handling, and compliance-aware patterns.
+- `web-content` for CMS integration, rich text safety, empty states, error pages, and content schema.
+- `web-pwa` for installability, service workers, offline support, background sync, and push notifications.
+- `web-design-review` for design token alignment, spacing/typography/color audits, responsive and dark mode checks.
 
 ## Backend API workflow
 

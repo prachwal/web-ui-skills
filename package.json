@@ -41,7 +41,12 @@
     "forms",
     "data-fetching",
     "observability",
-    "deployment"
+    "deployment",
+    "authentication",
+    "pwa",
+    "privacy",
+    "content",
+    "design-review"
   ],
   "license": "MIT",
   "engines": {

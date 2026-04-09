@@ -17,6 +17,11 @@ This repository bundles Codex skills for building professional web applications.
 - `web-data-fetching` - loading/error/empty states, cancellation, retry, cache invalidation, typed API boundaries
 - `web-observability` - frontend errors, analytics events, Core Web Vitals, privacy-safe telemetry
 - `web-deployment` - env vars, preview deploys, redirects, cache headers, SPA fallback, CI checks
+- `web-auth-ux` - login, MFA, session expiry, password reset, role/permission UI, secure token handling
+- `web-privacy` - consent management, cookie banners, opt-in/opt-out, data minimization, PII handling
+- `web-content` - CMS integration, rich text safety, empty states, error pages, content schema
+- `web-pwa` - installability, service workers, offline support, push notifications, app manifest
+- `web-design-review` - design token alignment, spacing/typography/color review, responsive and dark mode checks
 - `web-security` - XSS, CSP, session management, security headers
 - `netlify-serverless` - current Netlify Functions and Edge model, auth, CORS, rate limiting, deployment patterns
 - `netlify-typescript-api` - TypeScript API structure, `Request`/`Response` handlers, validation, response contracts
@@ -92,14 +97,12 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
 - `preact-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
-- `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover the remaining production concerns.
+- `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover production frontend concerns.
+- `web-auth-ux`, `web-privacy`, `web-content`, `web-pwa`, and `web-design-review` cover specialized product and compliance workflows.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.
 
 ## TODO
 
-- Add `web-auth-ux` if login, reset password, MFA, session expiry, and role/permission UI flows become common.
-- Add `web-pwa` only if offline, installable app, service worker, or push-notification workflows become a target.
-- Add `web-content` if content-heavy, CMS, editorial workflow, empty-state copy, or marketing-page quality becomes a recurring need.
-- Add `web-privacy` if consent, cookies, tracking, analytics compliance, or privacy review becomes central.
-- Expand browser compatibility and progressive enhancement coverage if cross-browser support starts exceeding the current `web-testing` and `web-accessibility-standards` guidance.
-- Add `web-design-review` only if visual design critique becomes a common workflow beyond `scss-system` and `storybook-ui`.
+- Expand `web-auth-ux` with OAuth/OIDC provider integration patterns if social login becomes common.
+- Add `web-state-management` if complex shared client state beyond signals and TanStack Query becomes a recurring need.
+- Expand `web-pwa` with background sync and Workbox patterns if offline-first data becomes a requirement.
