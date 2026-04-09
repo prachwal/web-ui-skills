@@ -149,6 +149,10 @@ Use `forwardRef` + `useImperativeHandle` for focus management or third-party DOM
 - Keep route components thin — they delegate to feature-level Views.
 - Read route params via the `useRoute()` hook; never parse `window.location` manually.
 - Handle 404 with a catch-all `<Route default>` component.
+- Define route ownership explicitly: layout, loader/data owner, metadata owner, and error boundary.
+- Preserve navigation UX: focus the main heading or route shell after route changes when needed, and handle scroll restoration intentionally.
+- Keep URL state stable and shareable for filters, pagination, tabs, and search where users expect deep links.
+- Pair route definitions with `web-seo-metadata` for route metadata and `web-deployment` for SPA fallback behavior.
 
 ## SCSS integration
 

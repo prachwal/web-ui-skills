@@ -26,6 +26,7 @@ Use this skill when a page needs to be discoverable, shareable, and represented 
 - [ ] `robots.txt` does not accidentally block important assets or pages.
 - [ ] Structured data uses JSON-LD and matches visible content.
 - [ ] SPA route metadata updates on navigation and has a crawler-compatible rendering strategy.
+- [ ] Route metadata is defined next to or derived from the route map so new routes do not ship without metadata.
 
 ## Implementation rules
 
@@ -35,6 +36,7 @@ Use this skill when a page needs to be discoverable, shareable, and represented 
 - Use one canonical URL per content page and avoid conflicting canonical/redirect behavior.
 - Use `hreflang` only when localized equivalents are real and bidirectionally linked.
 - Include image alt text for visible images; social image metadata is not a substitute for accessibility.
+- Coordinate metadata with routing and deployment: redirects, canonical URLs, sitemap entries, and SPA fallback rules should agree.
 
 ## Testing focus
 
@@ -49,5 +51,6 @@ Use this skill when a page needs to be discoverable, shareable, and represented 
 - [Google Search Central: SEO Starter Guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide)
 - [Google Search Central: robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag)
 - [Google Search Central: sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview)
+- [Google Rich Results Test](https://search.google.com/test/rich-results)
 - [Open Graph protocol](https://ogp.me/)
 - [Schema.org JSON-LD](https://schema.org/docs/gs.html)

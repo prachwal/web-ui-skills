@@ -48,4 +48,5 @@ Use this skill when a web app needs measurable production behavior, not just loc
 
 - [web.dev: Measuring performance](https://web.dev/articles/user-centric-performance-metrics)
 - [web.dev: Core Web Vitals](https://web.dev/articles/vitals)
+- [web-vitals npm package](https://github.com/GoogleChrome/web-vitals)
 - [MDN: Reporting API](https://developer.mozilla.org/en-US/docs/Web/API/Reporting_API)

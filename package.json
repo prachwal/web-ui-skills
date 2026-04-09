@@ -27,6 +27,8 @@
     "kilo",
     "skills",
     "web-ui",
+    "typescript",
+    "eslint",
     "storybook",
     "preact",
     "scss",
@@ -37,6 +39,7 @@
     "performance",
     "seo",
     "forms",
+    "data-fetching",
     "observability",
     "deployment"
   ],

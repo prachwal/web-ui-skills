@@ -94,3 +94,12 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 - `preact-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
 - `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover the remaining production concerns.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.
+
+## TODO
+
+- Add `web-auth-ux` if login, reset password, MFA, session expiry, and role/permission UI flows become common.
+- Add `web-pwa` only if offline, installable app, service worker, or push-notification workflows become a target.
+- Add `web-content` if content-heavy, CMS, editorial workflow, empty-state copy, or marketing-page quality becomes a recurring need.
+- Add `web-privacy` if consent, cookies, tracking, analytics compliance, or privacy review becomes central.
+- Expand browser compatibility and progressive enhancement coverage if cross-browser support starts exceeding the current `web-testing` and `web-accessibility-standards` guidance.
+- Add `web-design-review` only if visual design critique becomes a common workflow beyond `scss-system` and `storybook-ui`.

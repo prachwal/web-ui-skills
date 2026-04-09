@@ -49,4 +49,5 @@ Use this skill when UI state depends on API calls, server data, local cache, or 
 
 - [MDN: Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
 - [MDN: AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
+- [TanStack Query docs](https://tanstack.com/query/latest)
 - [web.dev: Network reliability](https://web.dev/learn/pwa/network)
