@@ -28,121 +28,16 @@ Use this skill when a web app collects, stores, or transmits user data, uses ana
 - [ ] Forms do not send sensitive data in GET parameters.
 - [ ] Privacy policy URL is linked from the consent banner and any form that collects personal data.
 
-## Consent architecture
+## Reference files
 
-```ts
-// src/lib/consent.ts
-export type ConsentState = {
-  analytics: boolean;
-  marketing: boolean;
-};
+### [`references/consent.md`](references/consent.md)
+**Consent management** — `ConsentState` typed with `version` for re-consent on policy changes, `getConsent`/`setConsent`/`revokeConsent` with `localStorage`, `shouldShowConsentBanner()` version check, Preact `<ConsentBanner>` with equal reject/accept prominence, `<ConsentPreferences>` granular checkboxes, functional-cookie exclusion pattern.
 
-const CONSENT_KEY = "privacy-consent";
+### [`references/script-loading.md`](references/script-loading.md)
+**Conditional script loading** — `loadAnalytics`/`unloadAnalytics` with script injection and cookie clearing, page-load initialization order, CSP `script-src` allowlist in `netlify.toml`, privacy-first Plausible alternative, PostHog with `persistence: "memory"` and `autocapture: false`. Use when tracking scripts must be loaded only after consent.
 
-export function getConsent(): ConsentState | null {
-  try {
-    const raw = localStorage.getItem(CONSENT_KEY);
-    return raw ? (JSON.parse(raw) as ConsentState) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setConsent(state: ConsentState) {
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(state));
-  applyConsent(state);
-}
-
-export function revokeConsent() {
-  localStorage.removeItem(CONSENT_KEY);
-  applyConsent({ analytics: false, marketing: false });
-}
-
-function applyConsent(state: ConsentState) {
-  if (state.analytics) {
-    loadAnalytics();
-  } else {
-    unloadAnalytics();
-  }
-}
-```
-
-## Conditional script loading
-
-Do not place tracking scripts in `<head>` unconditionally. Load only after consent:
-
-```ts
-// src/lib/analytics.ts
-let loaded = false;
-
-export function loadAnalytics() {
-  if (loaded || import.meta.env.DEV) return;
-  loaded = true;
-
-  const script = document.createElement("script");
-  script.src = "https://analytics.example.com/a.js";
-  script.async = true;
-  document.head.appendChild(script);
-}
-
-export function unloadAnalytics() {
-  // Remove cookies and disable tracking
-  // Exact API depends on your analytics provider
-  window.__analytics?.disable?.();
-  document.cookie = "_ga=; Max-Age=0; path=/; domain=.example.com";
-  document.cookie = "_gid=; Max-Age=0; path=/; domain=.example.com";
-  loaded = false;
-}
-```
-
-## Strip PII from URLs
-
-Remove sensitive query params after use (e.g. magic link tokens, pre-filled emails):
-
-```ts
-function stripParamsFromUrl(params: string[]) {
-  const url = new URL(window.location.href);
-  let changed = false;
-  for (const param of params) {
-    if (url.searchParams.has(param)) {
-      url.searchParams.delete(param);
-      changed = true;
-    }
-  }
-  if (changed) {
-    history.replaceState(null, "", url.toString());
-  }
-}
-
-// After consuming a magic link token:
-stripParamsFromUrl(["token", "email", "invite"]);
-```
-
-## Cookie consent banner rules
-
-- Do not pre-tick non-essential consent boxes.
-- Make "Reject all" or "Decline" as prominent as "Accept all" — equal size, same position.
-- Allow managing granular preferences (analytics vs. marketing vs. functional).
-- Show the banner again if consent is older than the configured expiry or the policy changes.
-- Functional cookies needed for authentication do not require consent.
-
-## Sensitive data in storage
-
-```ts
-// Never store tokens in localStorage — use HttpOnly cookies on the server
-// Never store sensitive user data in sessionStorage when it can be avoided
-// Acceptable in sessionStorage: transient UI state (current step, draft form)
-// Not acceptable: auth tokens, passwords, PII beyond display name
-
-// Redact sensitive fields before logging
-function redactForLog(obj: Record<string, unknown>): Record<string, unknown> {
-  const REDACTED = "[redacted]";
-  const SENSITIVE = new Set(["password", "token", "secret", "authorization", "email", "ssn"]);
-  return Object.fromEntries(
-    Object.entries(obj).map(([k, v]) => [k, SENSITIVE.has(k.toLowerCase()) ? REDACTED : v]),
-  );
-}
-```
+### [`references/data-handling.md`](references/data-handling.md)
+**Safe data patterns** — `stripParamsFromUrl()` with `history.replaceState` to remove tokens and emails from URLs, `redactForLog()` with nested object support, storage safety guide (what belongs where), server-side `anonymizeId()` hashing pattern, Vite `sourcemap: "hidden"` + post-build `.map` deletion for source map access control.
 
 ## Testing focus
 

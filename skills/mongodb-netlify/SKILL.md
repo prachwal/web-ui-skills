@@ -28,62 +28,15 @@ Use this skill when a Netlify app or API uses MongoDB, especially MongoDB Atlas 
 - Align Atlas region and Netlify function region when latency matters.
 - Use `netlify-serverless` for execution-model choices and `netlify-database-security` for generic secret policy.
 
-## Connection pattern
+## Reference files
 
-```ts
-import { MongoClient, ServerApiVersion } from "mongodb";
+### [`references/connection.md`](references/connection.md)
+**MongoClient setup and pool sizing** — Module-scope `MongoClient` with Stable API options (`strict: true`, `deprecationErrors: true`), `requireEnv()` fail-fast pattern, pool sizing table for serverless (low-traffic / moderate / burst / background), typed collection access with `WithId<T>`, `ObjectId` parse error handling, rules for idempotent `connect()` calls.
 
-const uri = Netlify.env.get("MONGODB_URI");
-if (!uri) throw new Error("MONGODB_URI is not set");
+### [`references/query-safety.md`](references/query-safety.md)
+**Injection prevention and safe queries** — MongoDB operator injection example (raw body as filter → bypass), field allowlisting for sort/filter with `Set` + type narrowing, safe `updateOne` via validated schema (never `$set: req.body`), projection to exclude sensitive fields, aggregation pipeline safety, `ObjectId.isValid()` guard, rules.
 
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-  maxPoolSize: 10,
-  minPoolSize: 0,
-  maxConnecting: 2,
-  serverSelectionTimeoutMS: 5000,
-});
-
-export async function getDb() {
-  return client.db("app");
-}
-```
-
-## Query and update rules
-
-- Never pass raw request payloads directly into query operators.
-- Whitelist sortable fields, filter fields, and projection fields.
-- Use indexes for every frequent filter and sort path.
-- Set explicit limits on collection reads and pagination size.
-- Prefer targeted updates over read-modify-write flows when possible.
-
-## Operational rules
-
-- Keep one client per process, not one client per request.
-- Review `maxPoolSize`, `maxConnecting`, and timeout settings for burst traffic.
-- Remember that the driver uses polling monitoring mode in function-as-a-service environments.
-- Log request IDs and query latency, but never log credentials or full sensitive documents.
-- Keep the focus here on MongoDB driver behavior.
-
-## When to use Mongoose
-
-- Use Mongoose only if the project benefits from schemas, middleware, or plugin-heavy domain modeling.
-- Avoid adding Mongoose for thin APIs where the native driver is enough.
-- If Mongoose is already in the repo, centralize connection reuse and keep models out of request handlers.
-
-## Testing focus
-
-- Wrong or missing Mongo URI.
-- Query validation failures and malformed ObjectId input.
-- Slow query and timeout behavior.
-- Pool exhaustion or burst traffic assumptions.
-- Atlas connectivity from local `netlify dev` and deployed functions.
-
-## References
+## External references
 
 - [MongoDB Node.js driver: choose a connection target](https://www.mongodb.com/docs/drivers/node/current/connect/connection-targets/)
 - [MongoDB Node.js driver: connection options](https://www.mongodb.com/docs/drivers/node/current/fundamentals/connection/connection-options/)

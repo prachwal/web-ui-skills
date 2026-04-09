@@ -46,11 +46,21 @@ Use this skill when a page needs to be discoverable, shareable, and represented 
 - Check that staging, preview, and private routes are not indexed.
 - Re-test metadata after routing, localization, or CMS changes.
 
-## References
+## Reference files
+
+### [`references/head-template.md`](references/head-template.md)
+**Complete `<head>` template** — All required meta tags: charset, viewport, title, description, canonical, robots, Open Graph (og:type, og:image, dimensions, alt), Twitter/X card, favicon links, manifest, theme-color. Includes Preact/SPA `setMetadata()` utility with per-property DOM helpers, and social image dimension table.
+
+### [`references/structured-data.md`](references/structured-data.md)
+**JSON-LD schemas** — Ready-to-use templates for Product (with offers + aggregateRating), Article, Organization, and BreadcrumbList. TypeScript `jsonLdScript()` helper that safely escapes `<>&` for inline script injection. Validation and consistency rules.
+
+### [`references/sitemap.md`](references/sitemap.md)
+**Sitemap and robots** — `sitemap.xml` entry format, dynamic sitemap generation via Netlify Functions (request-time generation with product slugs), `robots.txt` with Disallow patterns, preview/staging crawl lockdown via `netlify.toml` headers and meta tags, per-route robots directive table.
+
+## External references
 
 - [Google Search Central: SEO Starter Guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide)
 - [Google Search Central: robots meta tag](https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag)
-- [Google Search Central: sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview)
 - [Google Rich Results Test](https://search.google.com/test/rich-results)
 - [Open Graph protocol](https://ogp.me/)
 - [Schema.org JSON-LD](https://schema.org/docs/gs.html)

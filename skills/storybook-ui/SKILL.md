@@ -65,7 +65,18 @@ Use this skill when a frontend project needs a component workshop, UI documentat
 - Run visual tests on pull requests when the team uses Chromatic or an equivalent baseline workflow.
 - Treat failing stories as product regressions unless the story is explicitly experimental.
 
-## References
+## Reference files
+
+### [`references/setup.md`](references/setup.md)
+**Installation and configuration** — `npm create storybook@latest` command, typed `main.ts` with Vite framework, addon list (essentials, a11y, vitest), `preview.ts` with global styles import and `a11y.test: "error"`, npm scripts, file layout convention (stories next to components), rules for framework selection and CSS setup.
+
+### [`references/story-patterns.md`](references/story-patterns.md)
+**CSF stories and interaction tests** — Typed `Meta` + `StoryObj` pattern with `argTypes`, full state coverage (default/loading/disabled/error/empty/long-label), `play` function examples for form validation and submit state, MSW handler mock pattern for loading/empty/error network states, rules for realistic deterministic stories.
+
+### [`references/ci-testing.md`](references/ci-testing.md)
+**CI workflow and visual regression** — `@storybook/addon-vitest` setup with `vitest.config.ts` browser-mode config, full GitHub Actions workflow (checkout → Playwright → vitest → build-storybook → Chromatic), per-story `a11y` test override and disable patterns, Chromatic baseline workflow, experimental story tagging with exclusion, rules for CI failures.
+
+## External references
 
 - [Get started with Storybook](https://storybook.js.org/docs)
 - [Install Storybook](https://storybook.js.org/docs/get-started/install)

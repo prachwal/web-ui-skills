@@ -44,9 +44,19 @@ Use this skill when a web app needs measurable production behavior, not just loc
 - Check that sensitive form values and auth headers are not sent.
 - Confirm Web Vitals reporting does not double-count SPA route transitions.
 
-## References
+## Reference files
 
-- [web.dev: Measuring performance](https://web.dev/articles/user-centric-performance-metrics)
+### [`references/error-reporting.md`](references/error-reporting.md)
+**Runtime error capture** — Preact `ErrorBoundary` component with `componentDidCatch`, `reportError()` utility with dev/prod split and context sanitization, `unhandledrejection` global binding, async `withErrorReporting()` wrapper, source map upload and removal in CI. Start here for any error monitoring setup.
+
+### [`references/analytics.md`](references/analytics.md)
+**Typed analytics events** — `AnalyticsEvent` discriminated union, `track<N>()` with consent gate and dev bypass, SPA `page_view` deduplication, PII constraints table, hashed email pattern (server-side only), event naming conventions. Use this as the template for all product analytics instrumentation.
+
+### [`references/vitals.md`](references/vitals.md)
+**Core Web Vitals collection** — `web-vitals` setup with all five metrics (CLS, FCP, INP, LCP, TTFB), `sendBeacon` with `fetch keepalive` fallback, Netlify Functions ingestion endpoint, SPA route transition handling, thresholds reference table, alerting guidance. Use when real-user performance measurement is required.
+
+## External references
+
 - [web.dev: Core Web Vitals](https://web.dev/articles/vitals)
 - [web-vitals npm package](https://github.com/GoogleChrome/web-vitals)
 - [MDN: Reporting API](https://developer.mozilla.org/en-US/docs/Web/API/Reporting_API)

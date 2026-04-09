@@ -27,136 +27,16 @@ Use this skill when a web app needs to be installable, work offline, or use serv
 - [ ] Push payloads do not include sensitive data — fetch on notification click instead.
 - [ ] Service worker update strategy notifies the user or refreshes transparently.
 
-## Web app manifest
+## Reference files
 
-```json
-{
-  "name": "Acme Store",
-  "short_name": "Acme",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0055cc",
-  "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
-  ]
-}
-```
+### [`references/manifest.md`](references/manifest.md)
+**Web app manifest** — Complete `manifest.json` with all required fields (`name`, `short_name`, `start_url`, `display`, icons for 72/192/512/maskable), iOS Safari meta tags, icon size requirements table, maskable icon safe-zone rule, `beforeinstallprompt` capture and `promptInstall()` helper with TypeScript typing.
 
-## Service worker registration
+### [`references/service-worker.md`](references/service-worker.md)
+**Service worker lifecycle and caching** — `registerServiceWorker()` with HTTPS guard, `listenForUpdates()` → `showUpdateBanner()`, `SKIP_WAITING` message handler, install/activate/fetch event handlers, network-first for API routes, cache-first for static assets, navigation offline fallback, old cache cleanup, multi-session authentication safety rules.
 
-```ts
-// src/lib/sw-register.ts
-export function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return;
-
-  window.addEventListener("load", async () => {
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-
-      // Notify user when an update is ready
-      reg.addEventListener("updatefound", () => {
-        const worker = reg.installing;
-        worker?.addEventListener("statechange", () => {
-          if (worker.state === "installed" && navigator.serviceWorker.controller) {
-            notifyUpdateReady(reg);
-          }
-        });
-      });
-    } catch (err) {
-      console.warn("Service worker registration failed", err);
-    }
-  });
-}
-
-function notifyUpdateReady(reg: ServiceWorkerRegistration) {
-  // Show a UI prompt — never force reload without user intent
-  if (confirm("An update is available. Reload now?")) {
-    reg.waiting?.postMessage({ type: "SKIP_WAITING" });
-    window.location.reload();
-  }
-}
-```
-
-## Caching strategies (service worker)
-
-```ts
-// sw.ts — Workbox-free example using Cache API directly
-
-const STATIC_CACHE = "static-v1";
-const DATA_CACHE = "data-v1";
-const STATIC_ASSETS = ["/", "/index.html", "/offline.html"];
-
-self.addEventListener("install", (event: ExtendableEvent) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)),
-  );
-  (self as unknown as ServiceWorkerGlobalScope).skipWaiting();
-});
-
-self.addEventListener("fetch", (event: FetchEvent) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // Network-first for API requests
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const clone = res.clone();
-          caches.open(DATA_CACHE).then((c) => c.put(request, clone));
-          return res;
-        })
-        .catch(() => caches.match(request).then((r) => r ?? new Response("Offline", { status: 503 }))),
-    );
-    return;
-  }
-
-  // Cache-first for static assets
-  event.respondWith(
-    caches.match(request).then((cached) => cached ?? fetch(request)),
-  );
-});
-```
-
-## Push notifications
-
-```ts
-// Request permission in context (after user action, not on page load)
-async function subscribeToPush(publicVapidKey: string): Promise<PushSubscription | null> {
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return null;
-
-  const reg = await navigator.serviceWorker.ready;
-  return reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-  });
-}
-
-// Service worker: on push, show notification — do not include sensitive payload
-self.addEventListener("push", (event: PushEvent) => {
-  const data = event.data?.json() ?? { title: "New notification", body: "" };
-  event.waitUntil(
-    (self as unknown as ServiceWorkerGlobalScope).registration.showNotification(data.title, {
-      body: data.body,
-      icon: "/icons/icon-192.png",
-      data: { url: data.url },
-    }),
-  );
-});
-
-self.addEventListener("notificationclick", (event: NotificationEvent) => {
-  event.notification.close();
-  event.waitUntil(
-    (self as unknown as ServiceWorkerGlobalScope).clients.openWindow(
-      event.notification.data?.url ?? "/",
-    ),
-  );
-});
-```
+### [`references/push.md`](references/push.md)
+**Push notifications** — `subscribeToPush()` with `requestPermission()` gating and VAPID key setup, `unsubscribeFromPush()` with server cleanup, `urlBase64ToUint8Array` helper, SW `push` event handler (minimal non-PII payload), `notificationclick` with focus-existing-tab logic, Netlify Function `send-push` using `web-push`, subscription expiry (410) handling.
 
 ## Testing focus
 
@@ -167,7 +47,7 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
 - App passes Lighthouse PWA audit for basic installability.
 - Service worker does not cache authenticated responses shared across users.
 
-## References
+## External references
 
 - [web.dev: Progressive Web Apps](https://web.dev/learn/pwa/)
 - [MDN: Service Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API)

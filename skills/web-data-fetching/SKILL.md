@@ -45,7 +45,18 @@ Use this skill when UI state depends on API calls, server data, local cache, or 
 - Auth expiration and forbidden responses.
 - Offline or flaky network behavior where relevant.
 
-## References
+## Reference files
+
+### [`references/fetch-patterns.md`](references/fetch-patterns.md)
+**Core fetch utilities** — `FetchState<T>` discriminated union, cancellable fetch with `AbortController`, `fetchWithRetry` with bounded exponential backoff, `toErrorMessage` helper. Start here for any project that does not use TanStack Query.
+
+### [`references/tanstack-query.md`](references/tanstack-query.md)
+**TanStack Query v5 patterns** — `QueryClient` setup, typed query keys, `useQuery` with Zod validation, `useMutation` with cache invalidation, optimistic update pattern. Use when the project includes TanStack Query.
+
+### [`references/api-contracts.md`](references/api-contracts.md)
+**Typed API boundaries** — Zod schema validation at response ingress, `typedFetch` wrapper that throws `ApiError` vs `ValidationError`, error envelope contract, field-level 422 parsing, pagination query builder. Use to harden every API response before it reaches UI state.
+
+## External references
 
 - [MDN: Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
 - [MDN: AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)

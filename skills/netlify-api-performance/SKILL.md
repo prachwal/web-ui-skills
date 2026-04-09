@@ -63,7 +63,18 @@ Use this skill when a TypeScript API on Netlify needs to be faster, cheaper, or 
 - Recheck performance after schema or dependency changes.
 - Separate cold-start regressions from database regressions in measurements.
 
-## References
+## Reference files
+
+### [`references/caching-strategy.md`](references/caching-strategy.md)
+**Caching primitive selection and code** — Comparison table of HTTP headers vs. Cache API vs. Netlify Blobs vs. in-module variables (scope, consistency, use case), HTTP `Cache-Control` + `CDN-Cache-Control` examples, Netlify Cache API programmatic pattern with TTL and invalidation, Blobs-based rendered-output cache, consistency caveats, and rules.
+
+### [`references/db-efficiency.md`](references/db-efficiency.md)
+**Query optimization and N+1 prevention** — Column projection with `SELECT` field list, bounded pagination with allowlisted sort/order, N+1 example → JOIN fix → bulk-fetch-and-join alternative, `EXPLAIN ANALYZE BUFFERS` usage guide, index patterns (single, compound, partial), and rules including atomic operations.
+
+### [`references/observability.md`](references/observability.md)
+**Structured logging, latency tracking, cold-start detection** — `RequestLog` type with cold-start flag, `withLatency()` wrapper for any async operation, error emission with route + stack context, `/api/metrics` ingestion endpoint using `context.waitUntil()`, cold-start vs. query regression separation table, rules for `requestId` and telemetry safety.
+
+## External references
 
 - Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution-model limits and constraints.
 - [Get started with functions](https://docs.netlify.com/functions/get-started/)

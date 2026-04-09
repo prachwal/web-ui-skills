@@ -49,50 +49,18 @@ Use this skill when a Netlify app uses Neon directly or through Netlify DB, whic
 - Prefer one shaped query over multiple request-path round trips.
 - Run `EXPLAIN` or Neon query tuning before guessing at fixes.
 
-## Connection pattern
+## Reference files
 
-```ts
-// netlify/functions/_lib/db.ts
-import { neon } from "@neondatabase/serverless";
+### [`references/connection.md`](references/connection.md)
+**Neon connection setup** — Module-scope `neon()` SQL executor with `requireEnv()` fail-fast, tagged-template parameterized query examples, pooled vs. direct connection string table (with format and when to use each), transaction pattern using `pg.Pool` + direct string, rules for module-scope initialization and SSL.
 
-const connectionString = Netlify.env.get("DATABASE_URL");
-if (!connectionString) throw new Error("DATABASE_URL is not set");
+### [`references/branching.md`](references/branching.md)
+**Preview branch workflow** — What a Neon branch is (copy-on-write, instant creation), Neon API `POST /branches` call with endpoint creation, GitHub Actions CI step for branch-per-PR, seeding with migration tooling, branch cleanup script on PR close (list by name → delete by ID), rules for credential separation and lifecycle management.
 
-// neon() returns a tagged template SQL executor; reuse it across warm invocations.
-export const sql = neon(connectionString);
-```
+### [`references/query-patterns.md`](references/query-patterns.md)
+**Safe queries and optimization** — Tagged-template driver injection safety, bounded pagination with `Math.min` cap and parallel `COUNT` query, `EXPLAIN ANALYZE` output interpretation table, index recommendation patterns (single, compound, partial, GIN full-text), `INSERT … ON CONFLICT DO UPDATE` upsert, rules for EXPLAIN-first optimization.
 
-Usage:
-
-```ts
-const rows = await sql`SELECT id, name FROM products WHERE active = true LIMIT ${limit}`;
-```
-
-Use the pooled connection string for Netlify Functions. Use the direct connection string only for migration tooling run outside of the function runtime.
-
-## Roles and secrets
-
-- Use least-privilege Postgres roles.
-- Avoid shared superuser credentials in app code.
-- Rotate credentials through Netlify env vars and redeploy after changes.
-- Keep admin or migration credentials out of user-facing function code.
-- Do not repeat generic secret-loading boilerplate here unless Neon changes the workflow.
-
-## Netlify DB guidance
-
-- Use Netlify DB when you want the fastest Netlify-native setup flow for a Postgres database.
-- Treat it as Neon operationally: region, connection management, SQL discipline, and migration safety still matter.
-- Verify which environment variables Netlify injects before hardcoding names into shared templates.
-
-## Testing focus
-
-- Missing or wrong Neon connection strings.
-- Branch-specific preview workflows.
-- Migrations under load and rollback safety.
-- Query latency from function region to Neon region.
-- Pooled vs direct connection behavior under concurrent requests.
-
-## References
+## External references
 
 - [Netlify DB](https://docs.netlify.com/build/data-and-storage/netlify-db/)
 - [Neon API: create project](https://api-docs.neon.tech/reference/createproject)

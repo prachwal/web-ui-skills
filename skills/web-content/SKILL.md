@@ -29,111 +29,16 @@ Use this skill when a page or feature depends on dynamic content, a CMS, editori
 - [ ] Marketing pages use real copy, not lorem ipsum placeholders, before accessibility review.
 - [ ] Content changes do not require a full redeploy when a CMS is in use.
 
-## Safe rich text rendering
+## Reference files
 
-Never inject CMS HTML directly. Always sanitize:
+### [`references/safe-rendering.md`](references/safe-rendering.md)
+**CMS HTML sanitization** — DOMPurify setup with explicit `ALLOWED_TAGS`/`ALLOWED_ATTR` allowlists, URI allowlist (`https?|mailto|tel`), Preact `<RichText>` component using `dangerouslySetInnerHTML`, `patchExternalLinks()` post-sanitization helper with `useEffect` integration, image safety notes, and what DOMPurify removes by default.
 
-```ts
-import DOMPurify from "dompurify";
+### [`references/content-schema.md`](references/content-schema.md)
+**Content type schemas** — Zod `ArticleSchema` with required image `alt`, `AuthorSchema`, `ProductSchema` with images minimum, `collectionSchema<T>` generic wrapper for paginated API responses, lazy `NavItemSchema` for recursive menus, and content model rules (required alt, coerce date, enum for status, `min(1)` vs `string()`).
 
-const ALLOWED_TAGS = ["p", "br", "strong", "em", "a", "ul", "ol", "li",
-                      "h2", "h3", "h4", "blockquote", "figure", "figcaption",
-                      "img", "code", "pre"];
-
-const ALLOWED_ATTR = ["href", "title", "target", "rel", "src", "alt", "width", "height"];
-
-export function safeHtml(raw: string): string {
-  return DOMPurify.sanitize(raw, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    // Force noopener on external links
-    FORCE_BODY: false,
-    ADD_ATTR: ["rel"],
-  });
-}
-
-// In component (Preact):
-<div
-  class="rich-text"
-  dangerouslySetInnerHTML={{ __html: safeHtml(post.body) }}
-/>
-```
-
-## External link safety
-
-Add `rel="noopener noreferrer"` to all external links, including those from CMS content:
-
-```ts
-// After DOMPurify, patch external links
-export function patchExternalLinks(container: HTMLElement, siteOrigin: string) {
-  container.querySelectorAll<HTMLAnchorElement>("a[href]").forEach((a) => {
-    if (!a.href.startsWith(siteOrigin)) {
-      a.setAttribute("rel", "noopener noreferrer");
-      a.setAttribute("target", "_blank");
-    }
-  });
-}
-```
-
-## Empty state pattern
-
-```tsx
-interface EmptyStateProps {
-  title: string;
-  description: string;
-  action?: { label: string; href: string };
-}
-
-function EmptyState({ title, description, action }: EmptyStateProps) {
-  return (
-    <section aria-labelledby="empty-title" class="empty-state">
-      <h2 id="empty-title">{title}</h2>
-      <p>{description}</p>
-      {action && <a href={action.href} class="btn">{action.label}</a>}
-    </section>
-  );
-}
-
-// Usage:
-<EmptyState
-  title="No products found"
-  description="Try adjusting your filters or search terms."
-  action={{ label: "Clear filters", href: "/products" }}
-/>
-```
-
-## Content schema rules
-
-Define content types with required fields and validation before building the CMS:
-
-```ts
-import { z } from "zod";
-
-const ArticleSchema = z.object({
-  title: z.string().min(1).max(120),
-  slug: z.string().regex(/^[a-z0-9-]+$/),
-  publishedAt: z.coerce.date(),
-  summary: z.string().min(50).max(300),
-  body: z.string().min(100),
-  coverImage: z.object({
-    src: z.string().url(),
-    alt: z.string().min(1, "Alt text is required for cover images"),
-    width: z.number(),
-    height: z.number(),
-  }),
-  author: z.string().min(1),
-});
-
-type Article = z.infer<typeof ArticleSchema>;
-```
-
-## 404 and error page rules
-
-- Match site navigation and branding.
-- Keep heading clear: "Page not found" or "Something went wrong".
-- Offer at least one forward path: home, search, or common links.
-- Log 404s server-side to detect broken links.
-- Do not expose stack traces or internal paths on 500 pages.
+### [`references/empty-error-states.md`](references/empty-error-states.md)
+**Empty states and error pages** — `<EmptyState>` Preact component with `aria-labelledby`, action as href or onClick, usage examples, empty scenario table (search, first-use, permission, unavailable), `<NotFoundPage>` and `<ErrorPage>` components with structured nav, dev-only error details pattern.
 
 ## Testing focus
 
@@ -144,9 +49,8 @@ type Article = z.infer<typeof ArticleSchema>;
 - Heading hierarchy is correct after CMS edits.
 - 404 and 500 pages are reachable and styled correctly.
 
-## References
+## External references
 
-- [MDN: DOMPurify](https://github.com/cure53/DOMPurify)
+- [DOMPurify on GitHub](https://github.com/cure53/DOMPurify)
 - [MDN: Content sectioning](https://developer.mozilla.org/en-US/docs/Web/HTML/Element#content_sectioning)
-- [web.dev: Writing accessible descriptions](https://web.dev/articles/accessible-responsive-tables)
 - [OWASP XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)

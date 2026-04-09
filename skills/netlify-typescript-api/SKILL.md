@@ -41,63 +41,18 @@ Use this skill when building a backend API in TypeScript for Netlify Functions o
 - Use `context.waitUntil()` only for truly non-blocking work such as audit logs or metrics emission.
 - Keep secret policy and storage choice in the dedicated database skills.
 
-## Recommended route shape
+## Reference files
 
-```ts
-import type { Config, Context } from "@netlify/functions";
-import { createProduct } from "../../src/services/products";
-import { productInputSchema } from "../../src/models/product";
+### [`references/handler-patterns.md`](references/handler-patterns.md)
+**Handler structure and method guards** — Canonical handler with method guard → auth → GET/POST branches, path params via `context.params`, `apiSuccess`/`apiError` response envelope helpers, safe `req.json()` with `.catch(() => null)`, `requireAuth()` JWT helper pattern, rules for validation order and request ID inclusion.
 
-export default async (req: Request, context: Context) => {
-  if (req.method !== "POST") {
-    return Response.json({ error: "Method Not Allowed" }, { status: 405 });
-  }
+### [`references/contract-design.md`](references/contract-design.md)
+**API contracts and versioning** — Typed `ApiSuccess<T>`/`ApiCollection<T>`/`ApiError` envelopes, `ok()`/`collection()`/`err()` builders with `satisfies`, error code constants, path-based versioning with `Deprecation`/`Sunset` headers, idempotency key pattern for retryable writes, security response headers.
 
-  const parsed = productInputSchema.safeParse(await req.json());
-  if (!parsed.success) {
-    return Response.json({ error: "Validation failed" }, { status: 422 });
-  }
+### [`references/testing.md`](references/testing.md)
+**Unit and integration testing** — Full vitest handler test with `Request` constructor (GET list, GET by ID, POST create, validation failure, malformed JSON, 401, 405), `vi.mock` of service and auth layers, `vitest.config.ts` for Node environment, `curl`-based `netlify dev` smoke tests, test coverage target table.
 
-  const product = await createProduct(parsed.data, context.requestId);
-  return Response.json({ data: product }, { status: 201 });
-};
-
-export const config: Config = { path: "/api/products" };
-```
-
-## Handler checklist
-
-- Parse method, path, headers, query params, and body explicitly.
-- Prefer `config.path` + `context.params` over manual path parsing when the route is attached directly to the function.
-- Validate authentication and authorization before data access.
-- Normalize all errors into a known response format.
-- Set content type, cache headers, and security headers intentionally.
-- Keep side effects isolated so logic can be unit tested.
-- Include a request identifier in logs and optionally in error payloads.
-
-## Contract design
-
-- Use one success envelope shape per API family, such as `{ data, meta }`.
-- Use one error envelope shape per API family, such as `{ error, code, requestId }`.
-- Version behavior in paths or route groups when breaking changes are possible.
-- Keep pagination, filtering, and sorting explicit and bounded.
-- Use idempotency keys for endpoints that create expensive side effects or may be retried by clients.
-
-## Local and CI validation
-
-- Test handlers as pure functions where possible by passing `Request` objects directly.
-- Run route tests for invalid JSON, wrong methods, missing auth, validation failures, and downstream failures.
-- Run at least one integration pass with `netlify dev` before publishing route changes that depend on platform behavior.
-
-## Testing focus
-
-- Happy path for each route.
-- Invalid input and malformed JSON.
-- Unauthorized and forbidden access.
-- Downstream database or service failures.
-- Boundary cases for pagination, filtering, and idempotency.
-
-## References
+## External references
 
 - Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution-model choices.
 - Pair with [../netlify-database-security/SKILL.md](../netlify-database-security/SKILL.md) when the handler touches persistent data.

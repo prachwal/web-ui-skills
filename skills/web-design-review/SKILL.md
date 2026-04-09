@@ -41,91 +41,18 @@ Use this skill when evaluating whether implemented UI matches design intent, rev
 8. Verify animations respect `prefers-reduced-motion`.
 9. Inspect the DOM for hardcoded values that should be tokens.
 
-## Hardcoded value detector
+## Reference files
 
-Use browser devtools or a linter to find hardcoded values. In CSS/SCSS reviews, flag:
+### [`references/token-audit.md`](references/token-audit.md)
+**Hardcoded value detection** — Bad vs. good SCSS examples for all token categories (spacing, typography, color, radius, shadow, animation, z-index), grep patterns for automated scanning, token category checklist table, rules for deciding when a value needs a token vs. when it is an intrinsic reset.
 
-```scss
-// Bad — hardcoded values
-.card {
-  padding: 16px;                  // should be var(--space-4) or $space-4
-  font-size: 14px;                // should be var(--text-sm)
-  color: #1a1a2e;                 // should be var(--color-text-primary)
-  border-radius: 8px;             // should be var(--radius-md)
-  box-shadow: 0 2px 8px #00000029; // should be var(--shadow-md)
-}
+### [`references/responsive.md`](references/responsive.md)
+**Responsive review workflow** — Required breakpoints table (320/375/768/1024/1440px with device context), per-breakpoint checklist, step-by-step devtools workflow, `<picture>` responsive image example, common responsive failure table (overflow, wrap, collapse) with causes and fixes, severity guidance.
 
-// Good — token-based
-.card {
-  padding: var(--space-4);
-  font-size: var(--text-sm);
-  color: var(--color-text-primary);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-}
-```
+### [`references/motion-dark.md`](references/motion-dark.md)
+**Motion safety and dark mode correctness** — Global `prefers-reduced-motion` CSS override block, devtools emulation steps, animation patterns to flag with severity table, dark mode checklist, common dark mode failure table with fixes, SCSS dual-palette token pattern, severity reporting table.
 
-## Responsive review points
-
-Check at a minimum:
-- `320px` — smallest common mobile viewport
-- `375px` — iPhone base
-- `768px` — tablet / small landscape
-- `1024px` — desktop minimum
-- `1440px` — wide desktop baseline
-
-Verify: content does not overflow, text does not truncate unexpectedly, touch targets remain reachable, layout columns collapse at the correct breakpoint.
-
-## Dark mode review
-
-```ts
-// Verify token values switch correctly in both modes
-// Use browser devtools: toggle prefers-color-scheme via emulated media
-// Check each token category: text, background, border, shadow, icon, interactive state
-```
-
-Common dark mode failures:
-- Hardcoded `color: black` or `background: white` that did not go through a token.
-- Images and SVG icons that are not adjusted for dark backgrounds.
-- Focus ring colors that disappear against dark surfaces.
-- Third-party embed backgrounds that do not switch.
-
-## Motion and animation review
-
-```css
-/* Every animation must respect this */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-```
-
-Flag animations that:
-- Use `transition: all` — too broad, hard to reduce safely.
-- Have durations > 400ms on common interactive elements.
-- Loop infinitely without a pause or stop mechanism.
-- Are not covered by the reduced-motion override.
-
-## Reporting findings
-
-Use a consistent severity scale:
-
-| Severity | Meaning |
-|---|---|
-| `Blocker` | Breaks design intent significantly or causes accessibility failure |
-| `Major` | Visible deviation from spec or token misuse that affects multiple components |
-| `Minor` | Small spacing, size, or color deviation within one component |
-| `Enhancement` | Improvement beyond spec that would be a nice addition |
-
-Include: screenshot, element selector or component name, expected value, actual computed value, token or spec reference.
-
-## References
+## External references
 
 - [CSS Custom Properties (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties)
 - [prefers-reduced-motion (MDN)](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)

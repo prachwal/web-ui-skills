@@ -50,10 +50,20 @@ Use this skill when moving a frontend web app from local development to preview,
 - Environment-specific API URLs and feature flags.
 - Rollback or redeploy behavior.
 
-## References
+## Reference files
+
+### [`references/netlify-config.md`](references/netlify-config.md)
+**Complete `netlify.toml`** — Build settings, SPA fallback redirect, www/apex canonical redirect, security headers for all routes, immutable caching for fingerprinted assets, no-cache for HTML and service worker, API `no-store`, preview `X-Robots-Tag: noindex` via edge function, custom 404 handling, CORS headers for API routes.
+
+### [`references/env-vars.md`](references/env-vars.md)
+**Environment variable management** — Variable types table (public `VITE_` vs private runtime), `requireEnv()` fail-fast pattern, Vite `define` config, Netlify scope guide (Builds / Functions / Runtime), per-context `netlify.toml` values, `.env.example` convention, secret rotation checklist, CI secrets with GitHub Actions.
+
+### [`references/ci-pipeline.md`](references/ci-pipeline.md)
+**GitHub Actions CI/CD pipeline** — Full workflow with quality gates (typecheck, lint, unit tests, build), E2E test job, separate preview and production deploy jobs, minimum npm scripts, pre-deploy bundle secret scan, post-deploy smoke checks, release metadata via `VITE_` env vars.
+
+## External references
 
 - [MDN: HTTP caching](https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching)
-- [MDN: Redirections in HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections)
 - [Netlify redirects and rewrites](https://docs.netlify.com/routing/redirects/)
 - [Netlify environment variables](https://docs.netlify.com/build/configure-builds/environment-variables/)
 - [Netlify headers](https://docs.netlify.com/routing/headers/)

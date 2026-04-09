@@ -66,7 +66,18 @@ Use this skill when an API reads or writes persistent data from a database.
 - Test failure modes for expired credentials, network errors, and timeouts.
 - Test secret rotation and redeploy flow because runtime env changes require a new build and deploy.
 
-## References
+## Reference files
+
+### [`references/secrets.md`](references/secrets.md)
+**Secret loading and rotation** — `requireEnv()` fail-fast helper with module-init throw, Netlify variable scope table (build vs. Functions), per-context CLI commands for production vs. preview, step-by-step rotation checklist (add new → deploy → remove old → revoke), Blobs key-naming security example, rules for secret hygiene.
+
+### [`references/data-access.md`](references/data-access.md)
+**Safe query and access patterns** — SQL injection example → parameterized fix, Zod-validated filter schema before query, least-privilege PostgreSQL role setup (read-only vs. API roles), MongoDB-style projection to exclude sensitive fields, recursive `redactForLog()` with `SENSITIVE_KEYS` set, rules for allowlisted sort/filter columns.
+
+### [`references/blobs-facts.md`](references/blobs-facts.md)
+**Netlify Blobs security and consistency** — Platform guarantees table (encryption at rest/transit, propagation timing, local dev isolation), consistency model implications (no locks, no counters, ~60s update propagation), safe key naming with UUID validation and namespacing, sensitive data handling (what is and is not acceptable), authenticated handler pattern with per-user key scoping.
+
+## External references
 
 - Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution primitives.
 - Pair with [../netlify-api-performance/SKILL.md](../netlify-api-performance/SKILL.md) for latency and caching work.
