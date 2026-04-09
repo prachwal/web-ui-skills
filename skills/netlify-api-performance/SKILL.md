@@ -14,12 +14,11 @@ Use this skill when a TypeScript API on Netlify needs to be faster, cheaper, or 
 - Keep responses small and cacheable where possible.
 - Avoid unnecessary work inside the function runtime.
 
-## Platform limits that matter
+## Scope
 
-- Synchronous Functions can stream responses, but Netlify documents a 10 second execution limit for streaming and a 20 MB streamed response size limit.
-- Background Functions can run for up to 15 minutes and are a better fit for slow workflows than synchronous request handlers.
-- Scheduled Functions have a 30 second execution limit and only run on published deploys.
-- Edge Functions have a documented 20 MB compressed code size limit, 512 MB memory limit, and 50 ms CPU limit.
+- Assume the execution primitive has already been chosen.
+- Keep this skill focused on latency, throughput, cache behavior, and production measurements.
+- Use `netlify-serverless` for platform limits and routing primitives.
 
 ## Rules
 
@@ -66,6 +65,7 @@ Use this skill when a TypeScript API on Netlify needs to be faster, cheaper, or 
 
 ## References
 
+- Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution-model limits and constraints.
 - [Get started with functions](https://docs.netlify.com/functions/get-started/)
 - [Background Functions overview](https://docs.netlify.com/functions/background-functions/)
 - [Scheduled Functions](https://docs.netlify.com/build/functions/scheduled-functions/)

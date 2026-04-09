@@ -1,11 +1,11 @@
 ---
 name: netlify-typescript-api
-description: Use when designing or implementing TypeScript backend APIs on Netlify, including the current Functions API, routing with config.path, validation, typed contracts, and response design.
+description: Use when designing or implementing TypeScript backend APIs on Netlify, including handler structure, validation, typed contracts, error envelopes, and testable request/response flow.
 ---
 
 # Netlify TypeScript API Skill
 
-Use this skill when building a backend API in TypeScript for Netlify Functions or Netlify-compatible serverless routes.
+Use this skill when building a backend API in TypeScript for Netlify Functions or Netlify-compatible serverless routes after the execution primitive has already been chosen.
 
 ## Core goals
 
@@ -25,10 +25,9 @@ Use this skill when building a backend API in TypeScript for Netlify Functions o
 
 ## Platform facts that change implementation
 
-- Netlify Functions support TypeScript without extra bundler setup. Netlify loads `tsconfig.json` from the functions directory, repo root, or base directory if present.
 - The current handler shape is `export default async (req: Request, context: Context) => Response`.
-- Use `export const config = { path: "/api/..." }` to attach routes directly instead of relying on redirect-only routing for every endpoint.
 - Use `context.params` for path params, `new URL(req.url)` for query params, and `Netlify.env.get()` for runtime env values.
+- Execution-model choices belong in `netlify-serverless`.
 
 ## Implementation rules
 
@@ -40,6 +39,7 @@ Use this skill when building a backend API in TypeScript for Netlify Functions o
 - Prefer small composable helpers over large monolithic handlers.
 - Return `Response` objects directly and use `Response.json()` for JSON payloads.
 - Use `context.waitUntil()` only for truly non-blocking work such as audit logs or metrics emission.
+- Keep secret policy and storage choice in the dedicated database skills.
 
 ## Recommended route shape
 
@@ -62,15 +62,13 @@ export default async (req: Request, context: Context) => {
   return Response.json({ data: product }, { status: 201 });
 };
 
-export const config: Config = {
-  path: "/api/products",
-};
+export const config: Config = { path: "/api/products" };
 ```
 
 ## Handler checklist
 
 - Parse method, path, headers, query params, and body explicitly.
-- Prefer `config.path` + `context.params` over manual path parsing.
+- Prefer `config.path` + `context.params` over manual path parsing when the route is attached directly to the function.
 - Validate authentication and authorization before data access.
 - Normalize all errors into a known response format.
 - Set content type, cache headers, and security headers intentionally.
@@ -101,6 +99,8 @@ export const config: Config = {
 
 ## References
 
+- Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution-model choices.
+- Pair with [../netlify-database-security/SKILL.md](../netlify-database-security/SKILL.md) when the handler touches persistent data.
 - [Get started with functions](https://docs.netlify.com/functions/get-started/)
 - [Serverless Functions API reference](https://docs.netlify.com/build/functions/api/)
 - [Environment variables and functions](https://docs.netlify.com/functions/environment-variables/)

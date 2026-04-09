@@ -26,6 +26,7 @@ Use this skill when a Netlify app or API uses MongoDB, especially MongoDB Atlas 
 - Keep pool sizes intentionally small for public APIs that may scale horizontally.
 - Store the URI in a Netlify runtime environment variable with Functions scope.
 - Align Atlas region and Netlify function region when latency matters.
+- Use `netlify-serverless` for execution-model choices and `netlify-database-security` for generic secret policy.
 
 ## Connection pattern
 
@@ -66,6 +67,7 @@ export async function getDb() {
 - Review `maxPoolSize`, `maxConnecting`, and timeout settings for burst traffic.
 - Remember that the driver uses polling monitoring mode in function-as-a-service environments.
 - Log request IDs and query latency, but never log credentials or full sensitive documents.
+- Keep the focus here on MongoDB driver behavior.
 
 ## When to use Mongoose
 

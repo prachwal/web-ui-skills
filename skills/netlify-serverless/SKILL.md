@@ -1,20 +1,20 @@
 ---
 name: netlify-serverless
-description: Use when building, reviewing, or securing API endpoints and serverless functions on Netlify. Covers the current Request/Response Functions API, Edge Functions, Background and Scheduled Functions, runtime env, auth, CORS, rate limiting, and deployment patterns.
+description: Use when choosing and operating Netlify's serverless execution primitives. Covers Functions, Edge Functions, Background and Scheduled Functions, runtime capabilities, routing primitives, and deployment-time constraints.
 ---
 
 # Netlify Serverless Skill
 
-Use this skill when writing backend API logic that runs on Netlify's serverless infrastructure: Functions, Edge Functions, Background Functions, and Scheduled Functions.
+Use this skill when deciding how backend logic should run on Netlify's serverless infrastructure: Functions, Edge Functions, Background Functions, and Scheduled Functions.
 
 ## Core principles
 
 1. Prefer the current web-standard `Request`/`Response` API over the older Lambda compatibility shape.
-2. Keep functions small and single-purpose, with one route or job per file.
-3. Validate all input at the boundary and normalize errors into stable HTTP responses.
+2. Pick the execution primitive for the workload instead of forcing everything into synchronous Functions.
+3. Keep each function or job narrowly scoped, with one route or task per file.
 4. Use runtime-scoped environment variables for secrets. Do not treat `netlify.toml` as a secret store for functions.
-5. Pick the function type for the workload instead of forcing everything into synchronous Functions.
-6. Design for cold starts and regional execution: minimize module-scope work and keep shared state safe to reuse.
+5. Design for cold starts and regional execution: minimize module-scope work and keep shared state safe to reuse.
+6. Keep API contract design and database rules in the companion skills.
 
 ## Choose the right primitive
 
@@ -27,12 +27,11 @@ Use this skill when writing backend API logic that runs on Netlify's serverless 
 ## Workflow
 
 1. Identify whether the endpoint is synchronous, post-response, scheduled, or long-running.
-2. Define the contract: method, path, params, query string, body schema, auth, and response shape.
+2. Choose the primitive: synchronous Function, Edge Function, Background Function, or Scheduled Function.
 3. Decide whether the route should use `config.path` or the default `/.netlify/functions/<name>` path.
-4. Implement: validate input -> authorize -> call service or DB -> return `Response`.
-5. Add CORS only for routes that are actually browser-callable.
-6. Add rate limiting rules at the Netlify project level for expensive or public routes.
-7. Test locally with `netlify dev` and verify production-only behavior such as env vars, rate limiting, and scheduled jobs separately.
+4. Add only the platform-specific behavior needed for that primitive: path config, `waitUntil`, schedule, or edge context.
+5. Keep request contracts and database rules in the dedicated companion skills.
+6. Test locally with `netlify dev` and verify production-only behavior such as env vars, rate limiting, and scheduled jobs separately.
 
 ## Directory layout
 
@@ -70,10 +69,7 @@ export default async (req: Request, context: Context) => {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.name || typeof body.price !== "number" || body.price < 0) {
-    return Response.json({ error: "Validation failed" }, { status: 422 });
-  }
-
+  // Validation, auth, and service-layer rules belong in companion API skills.
   context.waitUntil(logAudit(context.requestId, body.name));
 
   return Response.json({ id: crypto.randomUUID(), ...body }, { status: 201 });
@@ -88,37 +84,12 @@ async function logAudit(requestId: string, productName: string) {
 }
 ```
 
-## CORS
+## Request context
 
-Add CORS headers only to browser-callable routes and restrict origins in production:
-
-```ts
-const ORIGIN = Netlify.env.get("ALLOWED_ORIGIN");
-
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": ORIGIN ?? "https://example.com",
-    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  };
-}
-
-if (req.method === "OPTIONS") {
-  return new Response(null, { status: 204, headers: corsHeaders() });
-}
-
-return new Response(JSON.stringify(data), {
-  status: 200,
-  headers: { ...corsHeaders(), "Content-Type": "application/json" },
-});
-```
-
-## Auth and request context
-
-- Use the `Authorization` header or signed cookies and fail closed when auth is missing or invalid.
 - Log `context.requestId` on every failure path so downstream logs can be correlated.
 - Use `context.params`, `context.ip`, `context.geo`, and `context.site` where they materially affect behavior. Do not parse these values from raw headers when Netlify already provides them.
 - In Edge Functions, use the edge `Context` object for site, server region, params, and `waitUntil`.
+- Keep auth, CORS, and response-shape policy in the companion API or security skills.
 
 ## Environment variables
 
@@ -136,10 +107,11 @@ const secret = Netlify.env.get("JWT_SECRET");
 if (!secret) throw new Error("JWT_SECRET is not set");
 ```
 
-- For serverless Functions, read runtime secrets via `Netlify.env.get("KEY")`.
+- For serverless Functions, read runtime env via `Netlify.env.get("KEY")`.
 - For Edge Functions, use `Netlify.env.get("KEY")` for env access.
 - Changes to function runtime env vars require a new build and deploy to take effect.
 - Only a subset of Netlify read-only variables is available at runtime. If code depends on repo, branch, or deploy metadata, verify it is exposed in the current runtime first.
+- Keep secrets and least-privilege policy in the companion security skills.
 
 ## Routing
 
@@ -196,35 +168,22 @@ export default async () => {
 export const config: Config = { schedule: "@daily" };
 ```
 
-## Error handling pattern
+## Platform-only checklist
 
-```ts
-function ok(data: unknown, init?: ResponseInit) {
-  return Response.json(data, init);
-}
-
-function fail(message: string, status: number, requestId?: string) {
-  return Response.json({ error: message, requestId }, { status });
-}
-```
-
-## Security checklist
-
-- [ ] All secrets in env variables, never in code
-- [ ] Input validated and sanitized before use
-- [ ] Auth checked before any data access
-- [ ] CORS restricted to known origins in production
-- [ ] Webhook payloads verified with HMAC signature
+- [ ] Correct primitive chosen for the workload
+- [ ] Route attached with `config.path` only when needed
+- [ ] Edge-specific work stays within edge CPU and bundle limits
+- [ ] Background work uses the `-background` suffix and tolerates retries
+- [ ] Scheduled work uses `config.schedule` and does not rely on preview deploys
+- [ ] Runtime env vars are scoped for Functions where needed
 - [ ] Rate limiting configured at the Netlify project level for public and expensive routes
-- [ ] No stack traces or DB errors returned to client
-- [ ] `Content-Type` set intentionally on every response
-- [ ] `requestId` included in logs and error responses where useful
+- [ ] `requestId` included in logs where useful
 
 ## References
 
 Local reference files:
 - [references/functions.md](references/functions.md): function types, request model, path params, local dev, toml config
-- [references/security.md](references/security.md): JWT auth, CORS, webhook HMAC, secrets, rate limiting
+- [references/security.md](references/security.md): auth, CORS, webhook HMAC, secrets, rate limiting
 - [references/patterns.md](references/patterns.md): shared helpers, error handling, DB pooling, pagination, caching, tests
 
 Netlify docs:

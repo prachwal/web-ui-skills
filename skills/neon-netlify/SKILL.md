@@ -32,6 +32,7 @@ Use this skill when a Netlify app uses Neon directly or through Netlify DB, whic
 - Reuse database clients at module scope when the library supports it.
 - Keep the Netlify function region close to the Neon compute region.
 - Use Background Functions for slow maintenance jobs, bulk imports, or heavy migrations instead of synchronous request handlers.
+- Use `netlify-serverless` for function-type choice and `netlify-database-security` for general secret policy.
 
 ## Branching workflow
 
@@ -75,6 +76,7 @@ Use the pooled connection string for Netlify Functions. Use the direct connectio
 - Avoid shared superuser credentials in app code.
 - Rotate credentials through Netlify env vars and redeploy after changes.
 - Keep admin or migration credentials out of user-facing function code.
+- Do not repeat generic secret-loading boilerplate here unless Neon changes the workflow.
 
 ## Netlify DB guidance
 

@@ -5,13 +5,13 @@ Repository-local guidance for building TypeScript backend APIs on Netlify with d
 Use these skills together:
 
 - `typescript-fundamentals` for TypeScript patterns, type design, naming, JSDoc, formatting, and module structure.
-- `eslint-config` for flat config setup, rule selection, and framework-specific presets (TypeScript, Preact, Node, monorepo).
-- `netlify-serverless` for choosing between Functions, Edge, Background, and Scheduled execution models.
-- `netlify-typescript-api` for routing, handlers, validation, and API shape.
-- `netlify-database-security` for secrets, database access, auth, and safe data handling.
-- `netlify-api-performance` for latency, cold starts, caching, and operational efficiency.
-- `mongodb-netlify` for MongoDB Atlas connection reuse, pooling, and query safety on Netlify.
-- `neon-netlify` for Neon or Netlify DB workflows, pooled Postgres access, and branch-aware deployments.
+- `eslint-config` for flat config setup, rule selection, and framework-specific presets.
+- `netlify-serverless` for execution-model choice: Functions, Edge, Background, and Scheduled.
+- `netlify-typescript-api` for handler architecture, validation boundaries, and response contracts.
+- `netlify-database-security` for secrets, least privilege, and persistence rules.
+- `netlify-api-performance` for latency, caching, and observability tuning.
+- `mongodb-netlify` for MongoDB-specific connection and query behavior on Netlify.
+- `neon-netlify` for Neon or Netlify DB connection strategy, branching, and Postgres-specific workflows.
 
 Complementary UI workflow:
 

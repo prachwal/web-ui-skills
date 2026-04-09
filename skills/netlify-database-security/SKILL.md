@@ -29,6 +29,7 @@ Use this skill when an API reads or writes persistent data from a database.
 - Restrict database users to the minimum required permissions.
 - Separate read and write paths when that reduces risk.
 - Do not assume values declared in `netlify.toml` are available at function runtime. Netlify documents that they are not.
+- Leave function-type selection to `netlify-serverless`.
 
 ## Connection guidance
 
@@ -37,6 +38,7 @@ Use this skill when an API reads or writes persistent data from a database.
 - Treat cold starts as normal and make initialization idempotent.
 - Fail closed if a required secret or DSN is missing.
 - Keep region placement in mind. If the database is far from the function region, latency and timeout risk increase.
+- Keep this section about credential safety and failure behavior.
 
 ## Data handling guidance
 
@@ -66,5 +68,7 @@ Use this skill when an API reads or writes persistent data from a database.
 
 ## References
 
+- Pair with [../netlify-serverless/SKILL.md](../netlify-serverless/SKILL.md) for execution primitives.
+- Pair with [../netlify-api-performance/SKILL.md](../netlify-api-performance/SKILL.md) for latency and caching work.
 - [Environment variables and functions](https://docs.netlify.com/functions/environment-variables/)
 - [Netlify Blobs overview](https://docs.netlify.com/storage/blobs/overview/)
