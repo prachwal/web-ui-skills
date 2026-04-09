@@ -44,7 +44,7 @@ npx web-ui-skills --codex --claude   # multiple tools at once
 Additional options:
 
 ```bash
-npx web-ui-skills --list   # show available skills
+npx web-ui-skills --list   # show detected skills and structural warnings
 npx web-ui-skills --help   # show help
 ```
 

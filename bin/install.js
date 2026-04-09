@@ -5,16 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const SKILLS = [
-  'preact-ui',
-  'scss-system',
-  'web-accessibility-standards',
-  'a11y-review',
-  'web-performance',
-  'web-i18n',
-  'web-testing',
-  'web-security',
-];
+const SKILL_FILE = 'SKILL.md';
 
 function resolveToolDir(toolName) {
   const homeOverrides = {
@@ -54,25 +45,100 @@ function copyDir(src, dest) {
   }
 }
 
+function getSkillsSource() {
+  return path.join(__dirname, '..', 'skills');
+}
+
+function hasSkillFile(dir) {
+  return fs.existsSync(path.join(dir, SKILL_FILE));
+}
+
+function getTopLevelSkills(skillsSource = getSkillsSource()) {
+  if (!fs.existsSync(skillsSource)) return [];
+
+  return fs
+    .readdirSync(skillsSource, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((skill) => hasSkillFile(path.join(skillsSource, skill)))
+    .sort();
+}
+
+function findSkillFiles(dir, results = []) {
+  if (!fs.existsSync(dir)) return results;
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      findSkillFiles(entryPath, results);
+    } else if (entry.isFile() && entry.name === SKILL_FILE) {
+      results.push(entryPath);
+    }
+  }
+
+  return results;
+}
+
+function readSkillName(skillFile) {
+  const content = fs.readFileSync(skillFile, 'utf8');
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+
+  const nameMatch = match[1].match(/^name:\s*(.+)\s*$/m);
+  return nameMatch ? nameMatch[1].trim().replace(/^['"]|['"]$/g, '') : null;
+}
+
+function validateSkillTree(skillsSource = getSkillsSource()) {
+  const topLevelSkills = getTopLevelSkills(skillsSource);
+  const warnings = [];
+
+  for (const skill of topLevelSkills) {
+    const skillFile = path.join(skillsSource, skill, SKILL_FILE);
+    const skillName = readSkillName(skillFile);
+    if (!skillName) {
+      warnings.push(`Missing frontmatter name in ${path.relative(skillsSource, skillFile)}`);
+    } else if (skillName !== skill) {
+      warnings.push(`Skill directory/name mismatch: ${skill} uses name "${skillName}"`);
+    }
+  }
+
+  const names = new Map();
+  for (const skillFile of findSkillFiles(skillsSource)) {
+    const skillName = readSkillName(skillFile);
+    if (!skillName) continue;
+
+    const relativePath = path.relative(skillsSource, skillFile);
+    const previous = names.get(skillName);
+    if (previous) {
+      warnings.push(`Duplicate skill name "${skillName}" in ${previous} and ${relativePath}`);
+    } else {
+      names.set(skillName, relativePath);
+    }
+  }
+
+  return { skills: topLevelSkills, warnings };
+}
+
 function installForTool(toolName) {
   const targetDir = TOOLS[toolName];
-  const skillsSource = path.join(__dirname, '..', 'skills');
+  const skillsSource = getSkillsSource();
 
   if (!fs.existsSync(skillsSource)) {
     console.error(`✗ Skills source directory not found: ${skillsSource}`);
     return false;
   }
 
+  const { skills, warnings } = validateSkillTree(skillsSource);
+  if (warnings.length > 0) {
+    warnings.forEach((warning) => console.warn(`⚠ ${warning}`));
+  }
+
   fs.mkdirSync(targetDir, { recursive: true });
 
   let installed = 0;
-  for (const skill of SKILLS) {
+  for (const skill of skills) {
     const src = path.join(skillsSource, skill);
     const dest = path.join(targetDir, skill);
-    if (!fs.existsSync(src)) {
-      console.warn(`⚠ Skill not found, skipping: ${skill}`);
-      continue;
-    }
     fs.rmSync(dest, { recursive: true, force: true });
     copyDir(src, dest);
     installed += 1;
@@ -110,8 +176,14 @@ if (args.includes('-h') || args.includes('--help')) {
 }
 
 if (args.includes('--list')) {
+  const { skills, warnings } = validateSkillTree();
+
   console.log('\nAvailable skills:\n');
-  SKILLS.forEach((skill) => console.log(`  • ${skill}`));
+  skills.forEach((skill) => console.log(`  • ${skill}`));
+  if (warnings.length > 0) {
+    console.log('\nWarnings:\n');
+    warnings.forEach((warning) => console.log(`  ⚠ ${warning}`));
+  }
   console.log();
   process.exit(0);
 }
