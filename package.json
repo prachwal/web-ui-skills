@@ -34,7 +34,11 @@
     "mongodb",
     "neon",
     "accessibility",
-    "performance"
+    "performance",
+    "seo",
+    "forms",
+    "observability",
+    "deployment"
   ],
   "license": "MIT",
   "engines": {

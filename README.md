@@ -12,6 +12,11 @@ This repository bundles Codex skills for building professional web applications.
 - `web-i18n` - internationalization, RTL, locale-aware formatting
 - `web-testing` - Playwright E2E, component tests, visual regression, CI reporting
 - `storybook-ui` - Storybook setup, stories, interaction tests, accessibility, visual testing
+- `web-seo-metadata` - route metadata, canonical URLs, social previews, sitemaps, structured data
+- `web-forms` - accessible forms, validation, async submit states, error handling, spam resistance
+- `web-data-fetching` - loading/error/empty states, cancellation, retry, cache invalidation, typed API boundaries
+- `web-observability` - frontend errors, analytics events, Core Web Vitals, privacy-safe telemetry
+- `web-deployment` - env vars, preview deploys, redirects, cache headers, SPA fallback, CI checks
 - `web-security` - XSS, CSP, session management, security headers
 - `netlify-serverless` - current Netlify Functions and Edge model, auth, CORS, rate limiting, deployment patterns
 - `netlify-typescript-api` - TypeScript API structure, `Request`/`Response` handlers, validation, response contracts
@@ -87,5 +92,5 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
 - `preact-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
-- `web-performance`, `web-i18n`, `web-testing`, and `web-security` cover the remaining production concerns.
+- `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover the remaining production concerns.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.
