@@ -4,45 +4,46 @@
 
 | Type | Runtime | Use case |
 |---|---|---|
-| Synchronous Function | Node.js 20 | REST API, auth, webhooks |
-| Background Function | Node.js 20 | Long tasks (up to 15 min) |
-| Scheduled Function | Node.js 20 | Cron jobs |
+| Synchronous Function | Node.js configured for the site, minimum 18 | REST API, auth, webhooks |
+| Background Function | Node.js configured for the site, minimum 18 | Long tasks (up to 15 min) |
+| Scheduled Function | Node.js configured for the site, minimum 18 | Cron jobs |
 | Edge Function | Deno / V8 | Sub-10 ms, geo, A/B, redirects |
 
-## Request model (HandlerEvent)
+## Request model (`Request` + `Context`)
 
 ```ts
-interface HandlerEvent {
-  httpMethod: string;           // 'GET' | 'POST' | …
-  path: string;                 // '/api/products'
-  queryStringParameters: Record<string, string> | null;
-  multiValueQueryStringParameters: Record<string, string[]> | null;
-  headers: Record<string, string>;
-  body: string | null;          // JSON string or form-encoded
-  isBase64Encoded: boolean;
+interface Context {
+  params: Record<string, string>;
+  requestId: string;
+  ip?: string;
+  geo?: {
+    city?: string;
+    country?: { code?: string; name?: string };
+  };
 }
 ```
 
-## Response model
+Use the standard Web APIs:
 
 ```ts
-interface HandlerResponse {
-  statusCode: number;
-  headers?: Record<string, string>;
-  multiValueHeaders?: Record<string, string[]>;
-  body?: string;
-  isBase64Encoded?: boolean;
-}
+req.method;
+req.headers.get("authorization");
+await req.json();
+new URL(req.url).searchParams.get("page");
+Response.json({ ok: true }, { status: 200 });
 ```
 
 ## Parsing and dispatching by method
 
 ```ts
-const handler: Handler = async (event) => {
-  switch (event.httpMethod) {
-    case 'GET':  return handleGet(event);
-    case 'POST': return handlePost(event);
-    default:     return { statusCode: 405, body: 'Method Not Allowed' };
+export default async (req: Request) => {
+  switch (req.method) {
+    case "GET":
+      return handleGet(req);
+    case "POST":
+      return handlePost(req);
+    default:
+      return new Response("Method Not Allowed", { status: 405 });
   }
 };
 ```
@@ -50,7 +51,9 @@ const handler: Handler = async (event) => {
 ## Query parameters
 
 ```ts
-const { page = '1', limit = '20' } = event.queryStringParameters ?? {};
+const url = new URL(req.url);
+const page = url.searchParams.get("page") ?? "1";
+const limit = url.searchParams.get("limit") ?? "20";
 const pageNum = Math.max(1, parseInt(page, 10));
 const limitNum = Math.min(100, parseInt(limit, 10));
 ```
@@ -58,43 +61,39 @@ const limitNum = Math.min(100, parseInt(limit, 10));
 ## Body parsing
 
 ```ts
-function parseBody<T>(event: HandlerEvent): T {
-  if (!event.body) throw new Error('Empty body');
+async function parseBody<T>(req: Request): Promise<T> {
   try {
-    return JSON.parse(
-      event.isBase64Encoded
-        ? Buffer.from(event.body, 'base64').toString()
-        : event.body
-    ) as T;
+    return (await req.json()) as T;
   } catch {
-    throw new Error('Invalid JSON');
+    throw new Error("Invalid JSON");
   }
 }
 ```
 
-## Path parameters via netlify.toml
-
-```toml
-# Expose :id from /api/products/:id
-[[redirects]]
-  from = "/api/products/:id"
-  to = "/.netlify/functions/api-product-detail"
-  status = 200
-```
+## Path parameters via `config.path`
 
 ```ts
-// Read from queryStringParameters (Netlify injects splat params there)
-const id = event.queryStringParameters?.id;
+import type { Config, Context } from "@netlify/functions";
+
+export default async (_req: Request, context: Context) => {
+  const id = context.params.id;
+  return Response.json({ id });
+};
+
+export const config: Config = {
+  path: "/api/products/:id",
+};
 ```
 
 ## Context and identity
 
 ```ts
 // netlify/functions/hello.ts
-const handler: Handler = async (_event, context) => {
-  const { identity, user } = context.clientContext ?? {};
-  // identity.token — JWT for Netlify Identity
-  // user — decoded user object when Netlify Identity is active
+import type { Context } from "@netlify/functions";
+
+export default async (_req: Request, context: Context) => {
+  console.log(context.requestId, context.ip, context.params);
+  return new Response("ok");
 };
 ```
 
@@ -104,14 +103,10 @@ Respond immediately, then do heavy work:
 
 ```ts
 // netlify/functions/generate-report-background.ts
-import type { BackgroundHandler } from '@netlify/functions';
-
-const handler: BackgroundHandler = async (event) => {
-  const { reportId } = JSON.parse(event.body ?? '{}');
+export default async (req: Request) => {
+  const { reportId } = await req.json();
   await buildAndStoreReport(reportId); // runs up to 15 min
 };
-
-export { handler };
 ```
 
 Invoke with a `POST`; Netlify returns `202 Accepted` immediately.

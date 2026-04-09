@@ -6,34 +6,31 @@ Define once, import everywhere:
 
 ```ts
 // netlify/functions/_lib/response.ts
-type Headers = Record<string, string>;
-
-const JSON_CT: Headers = { 'Content-Type': 'application/json' };
-
-export function ok(data: unknown, status = 200, extra: Headers = {}) {
-  return { statusCode: status, headers: { ...JSON_CT, ...extra }, body: JSON.stringify(data) };
+export function ok(data: unknown, init?: ResponseInit) {
+  return Response.json(data, init);
 }
 
-export function fail(message: string, status: number, extra: Headers = {}) {
-  return { statusCode: status, headers: { ...JSON_CT, ...extra }, body: JSON.stringify({ error: message }) };
+export function fail(message: string, status: number, requestId?: string) {
+  return Response.json({ error: message, requestId }, { status });
 }
 
 export function noContent() {
-  return { statusCode: 204, body: '' };
+  return new Response(null, { status: 204 });
 }
 ```
 
-## Shared input validation error handler
+## Shared error handler wrapper
 
 ```ts
 // netlify/functions/_lib/handler.ts
-import type { Handler, HandlerEvent, HandlerContext, HandlerResponse } from '@netlify/functions';
 import { fail } from './response';
 
+type Handler = (req: Request, context: unknown) => Promise<Response>;
+
 export function withErrorHandler(fn: Handler): Handler {
-  return async (event: HandlerEvent, context: HandlerContext): Promise<HandlerResponse> => {
+  return async (req, context) => {
     try {
-      return await fn(event, context) as HandlerResponse;
+      return await fn(req, context);
     } catch (err: unknown) {
       if ((err as Error).name === 'ValidationError') {
         return fail((err as Error).message, 422);
@@ -49,7 +46,7 @@ Usage:
 
 ```ts
 import { withErrorHandler } from './_lib/handler';
-export const handler = withErrorHandler(async (event) => { … });
+export default withErrorHandler(async (req) => { … });
 ```
 
 ## Database connection (module-scope caching)
@@ -60,11 +57,14 @@ Netlify function instances are reused across warm invocations. Cache connections
 // netlify/functions/_lib/db.ts
 import { Pool } from 'pg';
 
+const uri = Netlify.env.get("DATABASE_URL");
+if (!uri) throw new Error("DATABASE_URL is not set");
+
 let pool: Pool | null = null;
 
 export function getPool(): Pool {
   if (!pool) {
-    pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 3 });
+    pool = new Pool({ connectionString: uri, max: 3 });
   }
   return pool;
 }
@@ -77,9 +77,10 @@ Use `max: 3` or fewer per function to respect Postgres connection limits under c
 ```ts
 interface PageParams { page: number; limit: number; }
 
-function parsePagination(qs: Record<string, string> | null): PageParams {
-  const page  = Math.max(1, parseInt(qs?.page  ?? '1',  10));
-  const limit = Math.min(100, Math.max(1, parseInt(qs?.limit ?? '20', 10)));
+function parsePagination(req: Request): PageParams {
+  const qs = new URL(req.url).searchParams;
+  const page  = Math.max(1, parseInt(qs.get("page")  ?? "1",  10));
+  const limit = Math.min(100, Math.max(1, parseInt(qs.get("limit") ?? "20", 10)));
   return { page, limit };
 }
 
@@ -91,15 +92,14 @@ function pagedResponse<T>(items: T[], total: number, { page, limit }: PageParams
 ## Caching static GET responses
 
 ```ts
-return {
-  statusCode: 200,
+return new Response(JSON.stringify(data), {
+  status: 200,
   headers: {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+    "Content-Type": "application/json",
+    "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
     // CDN caches for 60s, serves stale up to 300s while revalidating
   },
-  body: JSON.stringify(data),
-};
+});
 ```
 
 Use `no-store` for authenticated or user-specific responses.
@@ -108,33 +108,26 @@ Use `no-store` for authenticated or user-specific responses.
 
 ```ts
 // __tests__/api-products.test.ts
-import { handler } from '../netlify/functions/api-products';
-import type { HandlerEvent } from '@netlify/functions';
+import handler from '../netlify/functions/api-products';
 
-function mockEvent(overrides: Partial<HandlerEvent> = {}): HandlerEvent {
-  return {
-    httpMethod: 'GET',
-    path: '/api/products',
-    headers: {},
-    queryStringParameters: null,
-    multiValueQueryStringParameters: null,
-    body: null,
-    isBase64Encoded: false,
-    rawUrl: 'http://localhost/api/products',
-    rawQuery: '',
-    ...overrides,
-  };
+function mockRequest(method = "GET", body?: unknown, path = "/api/products"): Request {
+  return new Request(`http://localhost${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }
 
 it('returns 405 for non-GET requests', async () => {
-  const res = await handler(mockEvent({ httpMethod: 'DELETE' }), {} as any);
-  expect(res?.statusCode).toBe(405);
+  const res = await handler(mockRequest("DELETE"), {} as any);
+  expect(res.status).toBe(405);
 });
 
 it('returns products list', async () => {
-  const res = await handler(mockEvent(), {} as any);
-  expect(res?.statusCode).toBe(200);
-  expect(JSON.parse(res?.body ?? '')).toHaveProperty('items');
+  const res = await handler(mockRequest("GET"), {} as any);
+  expect(res.status).toBe(200);
+  const data = await res.json();
+  expect(data).toHaveProperty('items');
 });
 ```
 

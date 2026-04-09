@@ -11,7 +11,14 @@ This repository bundles Codex skills for building professional web applications.
 - `web-performance` - Core Web Vitals, image optimization, bundle splitting
 - `web-i18n` - internationalization, RTL, locale-aware formatting
 - `web-testing` - Playwright E2E, component tests, visual regression, CI reporting
+- `storybook-ui` - Storybook setup, stories, interaction tests, accessibility, visual testing
 - `web-security` - XSS, CSP, session management, security headers
+- `netlify-serverless` - current Netlify Functions and Edge model, auth, CORS, rate limiting, deployment patterns
+- `netlify-typescript-api` - TypeScript API structure, `Request`/`Response` handlers, validation, response contracts
+- `netlify-database-security` - runtime env secrets, least privilege, storage choices, safe database access
+- `netlify-api-performance` - cold starts, query efficiency, cache strategy, regional observability
+- `mongodb-netlify` - MongoDB Atlas on Netlify, connection reuse, pooling, Stable API, query safety
+- `neon-netlify` - Neon and Netlify DB on Netlify, pooled Postgres access, branching, migration-safe workflows
 
 ## Install
 
@@ -79,5 +86,6 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
-- `preact-ui` and `scss-system` cover component and styling architecture.
+- `preact-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
 - `web-performance`, `web-i18n`, `web-testing`, and `web-security` cover the remaining production concerns.
+- `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.

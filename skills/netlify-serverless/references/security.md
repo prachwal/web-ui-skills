@@ -28,7 +28,7 @@ class ValidationError extends Error {}
 ```ts
 import { verify, sign } from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = Netlify.env.get("JWT_SECRET")!;
 
 export function signToken(payload: object, expiresIn = '1h') {
   return sign(payload, JWT_SECRET, { expiresIn });
@@ -43,25 +43,25 @@ export function verifyToken(token: string): { sub: string; role: string } | null
 }
 
 // In handler:
-const auth = event.headers.authorization ?? '';
-const user = auth.startsWith('Bearer ') ? verifyToken(auth.slice(7)) : null;
-if (!user) return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+const auth = req.headers.get("authorization") ?? "";
+const user = auth.startsWith("Bearer ") ? verifyToken(auth.slice(7)) : null;
+if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 ```
 
 ## CORS — production-safe
 
 ```ts
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '').split(',').map(s => s.trim());
+const ALLOWED_ORIGINS = (Netlify.env.get("ALLOWED_ORIGINS") ?? "").split(",").map(s => s.trim());
 
-function corsHeaders(event: HandlerEvent): Record<string, string> {
-  const origin = event.headers.origin ?? '';
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] ?? '';
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") ?? "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0] ?? "";
   return {
-    'Access-Control-Allow-Origin': allowed,
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Vary': 'Origin',
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Vary": "Origin",
   };
 }
 ```
@@ -113,9 +113,9 @@ For in-function token buckets (e.g. per-user), use an external KV store (Netlify
 
 ```ts
 // Fail fast at boot if required secrets are missing
-const REQUIRED_ENV = ['JWT_SECRET', 'DATABASE_URL', 'STRIPE_WEBHOOK_SECRET'];
+const REQUIRED_ENV = ["JWT_SECRET", "DATABASE_URL", "STRIPE_WEBHOOK_SECRET"];
 for (const key of REQUIRED_ENV) {
-  if (!process.env[key]) throw new Error(`Missing required env var: ${key}`);
+  if (!Netlify.env.get(key)) throw new Error(`Missing required env var: ${key}`);
 }
 ```
 

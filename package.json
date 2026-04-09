@@ -27,8 +27,12 @@
     "kilo",
     "skills",
     "web-ui",
+    "storybook",
     "preact",
     "scss",
+    "netlify",
+    "mongodb",
+    "neon",
     "accessibility",
     "performance"
   ],

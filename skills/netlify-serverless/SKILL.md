@@ -1,30 +1,38 @@
 ---
 name: netlify-serverless
-description: Use when building, reviewing, or securing API endpoints and serverless functions on Netlify. Covers Netlify Functions, Edge Functions, scheduled functions, environment config, authentication, CORS, rate limiting, error handling, and deployment patterns.
+description: Use when building, reviewing, or securing API endpoints and serverless functions on Netlify. Covers the current Request/Response Functions API, Edge Functions, Background and Scheduled Functions, runtime env, auth, CORS, rate limiting, and deployment patterns.
 ---
 
 # Netlify Serverless Skill
 
-Use this skill when writing backend API logic that runs on Netlify's serverless infrastructure: Functions (Node.js), Edge Functions (Deno/V8), scheduled jobs, and background tasks.
+Use this skill when writing backend API logic that runs on Netlify's serverless infrastructure: Functions, Edge Functions, Background Functions, and Scheduled Functions.
 
 ## Core principles
 
-1. Keep functions small and single-purpose — one endpoint per file.
-2. Validate all inputs at the function boundary; never trust the client.
-3. Return typed, predictable responses with correct HTTP status codes.
-4. Use environment variables for all secrets — never hard-code them.
-5. Handle errors explicitly; log enough context to debug, but never expose internals.
-6. Design for cold starts: minimize imports, avoid heavy initialization at module scope.
+1. Prefer the current web-standard `Request`/`Response` API over the older Lambda compatibility shape.
+2. Keep functions small and single-purpose, with one route or job per file.
+3. Validate all input at the boundary and normalize errors into stable HTTP responses.
+4. Use runtime-scoped environment variables for secrets. Do not treat `netlify.toml` as a secret store for functions.
+5. Pick the function type for the workload instead of forcing everything into synchronous Functions.
+6. Design for cold starts and regional execution: minimize module-scope work and keep shared state safe to reuse.
+
+## Choose the right primitive
+
+- Use a synchronous Function for normal API requests that must answer immediately.
+- Use `context.waitUntil()` for post-response work that should not block the client, such as telemetry, async audit logging, or fire-and-forget webhooks.
+- Use a Background Function for jobs that can run asynchronously for up to 15 minutes. Netlify returns `202` immediately and retries on failure.
+- Use a Scheduled Function for cron-style jobs that only run on published deploys and have a 30 second execution limit.
+- Use an Edge Function for request rewriting, auth gates, personalization, geo logic, or low-latency work near the user. Keep CPU work extremely small because Edge Functions have a 50 ms CPU limit.
 
 ## Workflow
 
-1. Identify the operation: CRUD, auth, webhook, background job, or data transform.
-2. Choose the function type: Function (stateless REST), Edge Function (low-latency, geo-aware), Scheduled (cron), or Background (long-running).
-3. Define the request contract: method, path, query params, body schema.
-4. Implement: validate input → call service/DB → return typed response.
-5. Add CORS headers when the function is called from a browser.
-6. Protect with auth (JWT or Netlify Identity) when the route is private.
-7. Test locally with `netlify dev` before deploying.
+1. Identify whether the endpoint is synchronous, post-response, scheduled, or long-running.
+2. Define the contract: method, path, params, query string, body schema, auth, and response shape.
+3. Decide whether the route should use `config.path` or the default `/.netlify/functions/<name>` path.
+4. Implement: validate input -> authorize -> call service or DB -> return `Response`.
+5. Add CORS only for routes that are actually browser-callable.
+6. Add rate limiting rules at the Netlify project level for expensive or public routes.
+7. Test locally with `netlify dev` and verify production-only behavior such as env vars, rate limiting, and scheduled jobs separately.
 
 ## Directory layout
 
@@ -35,10 +43,10 @@ netlify/
     api-products-[id].ts  ← GET/PUT/DELETE /api/products/:id
     auth-callback.ts      ← OAuth callback handler
     webhook-stripe.ts     ← Stripe webhook handler
+    sync-catalog-background.ts  ← long-running async job
+    daily-summary.ts      ← scheduled job via `config.schedule`
   edge-functions/
     geo-redirect.ts       ← edge-level redirect by country
-  scheduled/
-    sync-catalog.ts       ← nightly catalog sync
 netlify.toml              ← redirects, function config, env
 ```
 
@@ -46,76 +54,71 @@ netlify.toml              ← redirects, function config, env
 
 ```ts
 // netlify/functions/api-products.ts
-import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import type { Config, Context } from "@netlify/functions";
 
-interface ProductBody { name: string; price: number; }
+type ProductBody = { name: string; price: number };
 
-const handler: Handler = async (event: HandlerEvent, _ctx: HandlerContext) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+export default async (req: Request, context: Context) => {
+  if (req.method !== "POST") {
+    return Response.json({ error: "Method Not Allowed" }, { status: 405 });
   }
 
   let body: ProductBody;
   try {
-    body = JSON.parse(event.body ?? '{}');
+    body = await req.json();
   } catch {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.name || typeof body.price !== 'number' || body.price < 0) {
-    return { statusCode: 422, body: JSON.stringify({ error: 'Validation failed' }) };
+  if (!body.name || typeof body.price !== "number" || body.price < 0) {
+    return Response.json({ error: "Validation failed" }, { status: 422 });
   }
 
-  // call service / DB …
-  return {
-    statusCode: 201,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: crypto.randomUUID(), ...body }),
-  };
+  context.waitUntil(logAudit(context.requestId, body.name));
+
+  return Response.json({ id: crypto.randomUUID(), ...body }, { status: 201 });
 };
 
-export { handler };
+export const config: Config = {
+  path: "/api/products",
+};
+
+async function logAudit(requestId: string, productName: string) {
+  console.log("audit", { requestId, productName });
+}
 ```
 
 ## CORS
 
-Add CORS headers to every browser-callable function:
+Add CORS headers only to browser-callable routes and restrict origins in production:
 
 ```ts
-const CORS = {
-  'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGIN ?? '*',
-  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-};
+const ORIGIN = Netlify.env.get("ALLOWED_ORIGIN");
 
-if (event.httpMethod === 'OPTIONS') {
-  return { statusCode: 204, headers: CORS, body: '' };
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": ORIGIN ?? "https://example.com",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+  };
 }
 
-// … handler logic …
-return { statusCode: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
-```
-
-## Authentication (JWT)
-
-```ts
-import { verify } from 'jsonwebtoken';
-
-function getUser(event: HandlerEvent) {
-  const auth = event.headers.authorization ?? '';
-  if (!auth.startsWith('Bearer ')) return null;
-  try {
-    return verify(auth.slice(7), process.env.JWT_SECRET!) as { sub: string; role: string };
-  } catch {
-    return null;
-  }
+if (req.method === "OPTIONS") {
+  return new Response(null, { status: 204, headers: corsHeaders() });
 }
 
-// In handler:
-const user = getUser(event);
-if (!user) return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
-if (user.role !== 'admin') return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden' }) };
+return new Response(JSON.stringify(data), {
+  status: 200,
+  headers: { ...corsHeaders(), "Content-Type": "application/json" },
+});
 ```
+
+## Auth and request context
+
+- Use the `Authorization` header or signed cookies and fail closed when auth is missing or invalid.
+- Log `context.requestId` on every failure path so downstream logs can be correlated.
+- Use `context.params`, `context.ip`, `context.geo`, and `context.site` where they materially affect behavior. Do not parse these values from raw headers when Netlify already provides them.
+- In Edge Functions, use the edge `Context` object for site, server region, params, and `waitUntil`.
 
 ## Environment variables
 
@@ -124,85 +127,86 @@ if (user.role !== 'admin') return { statusCode: 403, body: JSON.stringify({ erro
 [build.environment]
   NODE_VERSION = "20"
 
-[context.production.environment]
-  API_BASE_URL = "https://api.example.com"
-
-# Secrets: set via Netlify dashboard or CLI — never in netlify.toml
-# netlify env:set JWT_SECRET "…"
+# Runtime secrets for Functions are not read from netlify.toml.
+# Set them in the Netlify UI, CLI, or API with Functions scope.
 ```
 
 ```ts
-const secret = process.env.JWT_SECRET;
-if (!secret) throw new Error('JWT_SECRET is not set');
+const secret = Netlify.env.get("JWT_SECRET");
+if (!secret) throw new Error("JWT_SECRET is not set");
 ```
 
-## Routing with netlify.toml redirects
+- For serverless Functions, read runtime secrets via `Netlify.env.get("KEY")`.
+- For Edge Functions, use `Netlify.env.get("KEY")` for env access.
+- Changes to function runtime env vars require a new build and deploy to take effect.
+- Only a subset of Netlify read-only variables is available at runtime. If code depends on repo, branch, or deploy metadata, verify it is exposed in the current runtime first.
 
-```toml
-# Route /api/* to functions
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api-:splat"
-  status = 200
+## Routing
 
-# SPA fallback
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
+- Prefer `export const config = { path: "/api/products/:id" }` for API routes instead of older redirect-based function routing.
+- Use redirect rules only when you need URL rewriting behavior outside the function itself.
+- Use named params from `context.params` and the standard `URL` API for query string parsing.
 
 ## Edge Functions
 
-Use for sub-10 ms latency requirements or geo/request-level logic:
+Use Edge Functions for request shaping, auth gates, geo personalization, and low-latency rewrites, not for heavy compute or relational query orchestration.
 
 ```ts
 // netlify/edge-functions/geo-redirect.ts
-import type { Config, Context } from '@netlify/edge-functions';
+import type { Config, Context } from "@netlify/edge-functions";
 
 export default async (request: Request, context: Context) => {
   const country = context.geo?.country?.code;
-  if (country === 'PL') {
-    return Response.redirect('https://pl.example.com' + new URL(request.url).pathname, 302);
+  if (country === "PL") {
+    return Response.redirect("https://pl.example.com" + new URL(request.url).pathname, 302);
   }
+
+  return context.next();
 };
 
-export const config: Config = { path: '/*' };
+export const config: Config = { path: "/*" };
 ```
 
-## Scheduled functions
+- Keep edge bundles small. Netlify documents a 20 MB compressed code size limit, 512 MB memory limit, and 50 ms CPU limit.
+- `context.waitUntil()` is available in Edge Functions too, but that async work still counts against the CPU budget.
+- Edge Functions can only rewrite to same-site URLs; use `fetch()` for external content.
+
+## Background and Scheduled Functions
+
+- Background Functions are defined by the `-background` suffix and are appropriate for long-running async work.
+- Background invocations return `202` immediately and can run for up to 15 minutes.
+- Scheduled Functions use `export const config = { schedule: "..." }`, do not expose a public URL, and have a 30 second execution limit.
+- Scheduled Functions only run on published deploys, not on Deploy Previews or branch deploys.
 
 ```ts
-// netlify/scheduled/sync-catalog.ts
-import type { Config, ScheduledHandler } from '@netlify/functions';
+// netlify/functions/sync-catalog-background.ts
+export default async () => {
+  await syncProductCatalog();
+};
+```
 
-const handler: ScheduledHandler = async () => {
+```ts
+// netlify/functions/daily-summary.ts
+import type { Config } from "@netlify/functions";
+
+export default async () => {
   await syncProductCatalog();
 };
 
-export const config: Config = { schedule: '@daily' };
-export { handler };
+export const config: Config = { schedule: "@daily" };
 ```
 
 ## Error handling pattern
 
 ```ts
-function ok(data: unknown, status = 200) {
-  return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) };
+function ok(data: unknown, init?: ResponseInit) {
+  return Response.json(data, init);
 }
 
-function fail(message: string, status: number) {
-  return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: message }) };
+function fail(message: string, status: number, requestId?: string) {
+  return Response.json({ error: message, requestId }, { status });
 }
 ```
-
-## Performance
-
-- Keep `import` statements minimal at the module level — every unused import adds cold-start time.
-- Cache external connections (DB, Redis) at module scope so they survive across warm invocations.
-- Use streaming responses (`response.body`) for large payloads in Edge Functions.
-- Set `Cache-Control` headers on read-only GET responses to leverage CDN caching.
-- Avoid synchronous `fs` and CPU-heavy blocking operations in the request path.
 
 ## Security checklist
 
@@ -211,12 +215,24 @@ function fail(message: string, status: number) {
 - [ ] Auth checked before any data access
 - [ ] CORS restricted to known origins in production
 - [ ] Webhook payloads verified with HMAC signature
-- [ ] Rate limiting enforced (Netlify rate limit rules or a middleware token bucket)
+- [ ] Rate limiting configured at the Netlify project level for public and expensive routes
 - [ ] No stack traces or DB errors returned to client
-- [ ] `Content-Type` set on every response
+- [ ] `Content-Type` set intentionally on every response
+- [ ] `requestId` included in logs and error responses where useful
 
 ## References
 
-- [references/functions.md](references/functions.md): function types, patterns, and request/response API
-- [references/security.md](references/security.md): auth, input validation, CORS, webhook verification, rate limiting
-- [references/patterns.md](references/patterns.md): shared helpers, error handling, caching, testing
+Local reference files:
+- [references/functions.md](references/functions.md): function types, request model, path params, local dev, toml config
+- [references/security.md](references/security.md): JWT auth, CORS, webhook HMAC, secrets, rate limiting
+- [references/patterns.md](references/patterns.md): shared helpers, error handling, DB pooling, pagination, caching, tests
+
+Netlify docs:
+- [Get started with functions](https://docs.netlify.com/functions/get-started/)
+- [Serverless Functions API reference](https://docs.netlify.com/build/functions/api/)
+- [Environment variables and functions](https://docs.netlify.com/functions/environment-variables/)
+- [Background Functions overview](https://docs.netlify.com/functions/background-functions/)
+- [Scheduled Functions](https://docs.netlify.com/build/functions/scheduled-functions/)
+- [Edge Functions API](https://docs.netlify.com/build/edge-functions/api/)
+- [Edge Functions limits](https://docs.netlify.com/edge-functions/limits/)
+- [Rate limiting](https://docs.netlify.com/manage/security/secure-access-to-sites/rate-limiting/)
