@@ -1,6 +1,6 @@
 {
   "name": "web-ui-skills",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Web UI skills bundle for Codex, Claude, Copilot, and Kilo CLI tools",
   "repository": {
     "type": "git",
