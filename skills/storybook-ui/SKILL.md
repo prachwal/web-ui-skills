@@ -23,6 +23,7 @@ Use this skill when a frontend project needs a component workshop, UI documentat
 5. Add the Vitest addon for component tests in the Storybook UI and CI.
 6. Add the a11y addon and fail stories intentionally where accessibility matters.
 7. Add Chromatic visual tests if the team wants hosted visual regression coverage.
+8. Before closing the task, run the Storybook Docs DoD self-audit (`Requirement | Done | Where`) from `references/setup.md`.
 
 ## Story rules
 
@@ -68,7 +69,7 @@ Use this skill when a frontend project needs a component workshop, UI documentat
 ## Reference files
 
 ### [`references/setup.md`](references/setup.md)
-**Installation and configuration** — `npm create storybook@latest` command, typed `main.ts` with Vite framework, addon list (essentials, a11y, vitest), `preview.ts` with global styles import and `a11y.test: "error"`, npm scripts, file layout convention (stories next to components), rules for framework selection and CSS setup.
+**Installation and configuration** — `npm create storybook@latest` command, typed `main.ts` with Vite framework, addon list (essentials, a11y, vitest), `preview.ts` with global styles import and `a11y.test: "error"`, npm scripts, file layout convention (stories next to components), rules for framework selection and CSS setup, plus the mandatory Storybook Docs Definition of Done checklist (Autodocs + MDX).
 
 ### [`references/story-patterns.md`](references/story-patterns.md)
 **CSF stories and interaction tests** — Typed `Meta` + `StoryObj` pattern with `argTypes`, full state coverage (default/loading/disabled/error/empty/long-label), `play` function examples for form validation and submit state, MSW handler mock pattern for loading/empty/error network states, rules for realistic deterministic stories.
