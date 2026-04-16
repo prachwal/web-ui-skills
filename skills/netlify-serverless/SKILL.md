@@ -139,7 +139,7 @@ export default async (request: Request, context: Context) => {
 export const config: Config = { path: "/*" };
 ```
 
-- Keep edge bundles small. Netlify documents a 20 MB compressed code size limit, 512 MB memory limit, and 50 ms CPU limit.
+- Keep edge bundles small. Netlify edge limits can change; verify current CPU/memory/size limits in docs before setting SLOs or adding heavy middleware.
 - `context.waitUntil()` is available in Edge Functions too, but that async work still counts against the CPU budget.
 - Edge Functions can only rewrite to same-site URLs; use `fetch()` for external content.
 
@@ -194,4 +194,4 @@ Netlify docs:
 - [Scheduled Functions](https://docs.netlify.com/build/functions/scheduled-functions/)
 - [Edge Functions API](https://docs.netlify.com/build/edge-functions/api/)
 - [Edge Functions limits](https://docs.netlify.com/edge-functions/limits/)
-- [Rate limiting](https://docs.netlify.com/manage/security/secure-access-to-sites/rate-limiting/)
+- [Rate limiting](https://docs.netlify.com/security/secure-access-to-sites/rate-limiting/)
