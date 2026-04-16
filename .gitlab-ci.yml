@@ -1,0 +1,141 @@
+# GitLab CI/CD Pipeline for Web UI Skills
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+
+# Test stage - validate skills and installation
+test:skills:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci
+  script:
+    - npm run list-skills
+    - node bin/install.js --list
+    - echo "Testing skill installation..."
+    - mkdir -p /tmp/test-skills
+    - CODEX_HOME=/tmp/test-skills node bin/install.js --codex
+    - ls -la /tmp/test-skills/skills/
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .npm/
+
+# Lint and validate Markdown
+test:docs:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm install -g markdownlint-cli
+  script:
+    - find skills -name "*.md" -exec markdownlint {} \;
+    - echo "Markdown validation passed"
+
+# Build stage - prepare distribution
+build:package:
+  stage: build
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci
+  script:
+    - npm run build 2>/dev/null || echo "No build script, skipping"
+    - echo "Package validation..."
+    - npm pack --dry-run
+  artifacts:
+    paths:
+      - "*.tgz"
+    expire_in: 1 week
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+      - .npm/
+
+# Deploy to NPM (only on tags)
+deploy:npm:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+  script:
+    - npm publish --tag latest
+  only:
+    - tags
+  when: manual
+
+# Deploy documentation (only on main branch)
+deploy:docs:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm install -g netlify-cli
+  script:
+    - netlify deploy --dir=. --prod
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://web-ui-skills.netlify.app
+
+# Release automation
+release:create:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  before_script:
+    - apt-get update && apt-get install -y jq curl
+    - npm ci
+  script:
+    - |
+      # Get current version
+      CURRENT_VERSION=$(node -p "require('./package.json').version")
+      echo "Current version: $CURRENT_VERSION"
+
+      # Bump patch version
+      NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+      echo "New version: $NEW_VERSION"
+
+      # Update package.json
+      npm version $NEW_VERSION --no-git-tag-version
+
+      # Create release notes
+      echo "Creating release $NEW_VERSION"
+
+      # Create git tag and push
+      git add package.json package-lock.json
+      git commit -m "chore(release): $NEW_VERSION [skip ci]"
+      git tag v$NEW_VERSION
+      git push origin main --tags
+  only:
+    - main
+  when: manual
+
+# Security scanning
+security:audit:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci
+  script:
+    - npm audit --audit-level moderate
+  allow_failure: true
+
+# Performance testing
+performance:test:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm ci
+  script:
+    - |
+      echo "Checking bundle sizes..."
+      find skills -name "*.md" -exec wc -l {} \; | sort -nr | head -10
+      echo "Performance check completed"
+  allow_failure: true

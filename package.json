@@ -46,7 +46,9 @@
     "pwa",
     "privacy",
     "content",
-    "design-review"
+    "design-review",
+    "auth0", 
+    "netlify"
   ],
   "license": "MIT",
   "engines": {

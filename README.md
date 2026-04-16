@@ -5,6 +5,13 @@
 
 This repository bundles Codex skills for building professional web applications.
 
+## Quick Start
+
+- **[Installation Guide](AGENTS.md#installation)** - How to install skills for your AI tools
+- **[Agent Configuration](AGENTS.md#agent-configuration)** - Configure Claude, Copilot, Codex, and Kilo
+- **[Contributing](AGENTS.md#development-workflow)** - How to contribute new skills
+- **[Repository Guidelines](AGENTS.md#repository-structure)** - Understanding the project structure
+
 ## Included skills
 
 - `preact-ui` - component architecture, MVVM, signals, forms, routing, and professional UI patterns
@@ -112,11 +119,14 @@ npm install
 node bin/install.js --codex --claude --copilot --kilo
 ```
 
-## Release publishing
+## CI/CD
 
-This repo publishes to npm from GitHub Releases using Trusted Publishing. Configure `web-ui-skills` as a trusted publisher in npmjs.com with the GitHub Actions workflow filename `.github/workflows/npm-publish.yml`. Create a release with a tag that matches the package version, for example `v1.0.4`. The workflow validates that the release tag and `package.json` version match, upgrades npm to a Trusted Publishing-compatible version, then publishes without an npm token secret.
+This repository supports both GitHub Actions and GitLab CI/CD:
 
-Releases are created automatically from `main` by `.github/workflows/release-on-main.yml`. Each push to `main` that is not already a release commit bumps the patch version, pushes the version commit and tag, creates a GitHub release, and dispatches the npm publish workflow with the new tag.
+- **GitHub Actions**: Automated releases and NPM publishing
+- **GitLab CI**: Comprehensive testing, building, and deployment pipeline
+
+See [.gitlab-ci.yml](.gitlab-ci.yml) for the complete GitLab CI configuration.
 
 ## Version prep
 
@@ -145,8 +155,26 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 - `web-auth-ux`, `web-privacy`, `web-content`, `web-pwa`, and `web-design-review` cover specialized product and compliance workflows.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.
 
-## TODO
+## Contributing
 
-- Expand `web-auth-ux` with OAuth/OIDC provider integration patterns if social login becomes common.
-- Add `web-state-management` if complex shared client state beyond signals and TanStack Query becomes a recurring need.
-- Expand `web-pwa` with background sync and Workbox patterns if offline-first data becomes a requirement.
+We welcome contributions! Please see [AGENTS.md](AGENTS.md) for detailed contribution guidelines, including:
+
+- How to add new skills
+- Code standards and conventions
+- Testing requirements
+- Pull request process
+
+### Repository Principles
+
+- **Quality First**: All skills must be thoroughly tested and follow best practices
+- **Consistency**: Maintain uniform structure and documentation across all skills
+- **Accessibility**: Include accessibility considerations in all UI-related skills
+- **Performance**: Consider bundle size and runtime performance implications
+- **Standards**: Prefer web standards and cross-platform compatibility
+
+### Limitations
+
+- Skills are focused on modern web development practices
+- No platform-specific code without clear cross-platform alternatives
+- Content must be original or properly licensed
+- Skills should remain relevant as technologies evolve
