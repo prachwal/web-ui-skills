@@ -44,7 +44,7 @@ node bin/install.js --codex --claude --copilot --kilo
 
 ### GitHub Copilot
 
-Skills are automatically loaded when Copilot is enabled in VS Code. The skills provide context-aware suggestions for:
+For Copilot, keep skills/instructions in repository-visible files (for example `.github/copilot-instructions.md`) so the assistant can use them consistently across sessions. The skills provide context-aware suggestions for:
 
 - Component architecture patterns
 - API design best practices
@@ -64,7 +64,7 @@ Configure Claude to use skills by ensuring the skills directory is in the Claude
 
 ### Codex
 
-Skills integrate with Codex through the skills directory structure. Codex will automatically discover and use patterns from the installed skills.
+Skills integrate with Codex through the skills directory structure. Codex discovers and applies patterns from installed skills when task context matches.
 
 ### Kilo
 

@@ -73,7 +73,9 @@ import { neonConfig } from "@neondatabase/serverless";
 import { Pool } from "pg";
 
 // Only use Pool for transaction flows — use neon() for simple queries
-neonConfig.webSocketConstructor = undefined; // use native TCP in Node 18+
+// In Node.js v21 and below, set this so `pg` uses native TCP instead of WebSockets.
+// In newer Node.js versions this is no longer required.
+neonConfig.webSocketConstructor = undefined;
 const pool = new Pool({ connectionString: requireEnv("DATABASE_URL_DIRECT") });
 
 export async function transferCredits(fromId: string, toId: string, amount: number) {
