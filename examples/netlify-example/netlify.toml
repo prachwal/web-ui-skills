@@ -1,0 +1,9 @@
+[build]
+  # For static sites, publish the current directory
+  publish = "."
+  # No build command needed for static HTML
+  command = ""
+
+[build.environment]
+  # Optional: set environment variables for build
+  NODE_VERSION = "18"
