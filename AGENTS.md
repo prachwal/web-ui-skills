@@ -112,6 +112,141 @@ Use conventional commit format:
 4. Get approval from maintainers
 5. Merge using squash or rebase strategy
 
+## Troubleshooting
+
+### Git Push Issues
+
+If you encounter "divergent branches" or "Updates were rejected" errors:
+
+```bash
+# Check branch status
+git status
+
+# Pull remote changes with merge (preserves both histories)
+git pull --no-rebase
+
+# If you prefer rebase (linear history)
+git pull --rebase
+
+# Force push if needed (use carefully!)
+git push --force-with-lease
+```
+
+### Common Git Scenarios
+
+**Divergent branches** (local and remote have different commits):
+```bash
+# Option 1: Merge (creates merge commit)
+git pull --no-rebase
+
+# Option 2: Rebase (linear history)
+git pull --rebase
+
+# Option 3: Reset to remote (loses local commits!)
+git reset --hard origin/main
+```
+
+**Merge conflicts**:
+```bash
+# Abort merge/rebase
+git merge --abort
+# or
+git rebase --abort
+
+# Resolve conflicts manually, then:
+git add <resolved-files>
+git commit
+```
+
+**Stash changes before pull**:
+```bash
+git stash
+git pull --rebase
+git stash pop
+```
+
+### Branch Management
+
+```bash
+# Create feature branch
+git checkout -b feature/my-feature
+
+# Switch branches
+git checkout main
+
+# Delete merged branch
+git branch -d feature/my-feature
+
+# Delete unmerged branch
+git branch -D feature/my-feature
+
+# List all branches
+git branch -a
+```
+
+### Syncing with Upstream
+
+```bash
+# Add upstream remote (if not exists)
+git remote add upstream https://github.com/prachwal/web-ui-skills.git
+
+# Fetch upstream changes
+git fetch upstream
+
+# Merge upstream main
+git merge upstream/main
+```
+
+## CI/CD Troubleshooting
+
+### GitLab CI Pipeline Issues
+
+**Pipeline fails on test stage**:
+- Check that all Markdown files are valid
+- Ensure `npm ci` completes successfully
+- Verify skill installation works in CI environment
+
+**NPM publish fails**:
+- Check `NPM_TOKEN` is set in GitLab CI variables
+- Ensure package version is unique
+- Verify package.json is valid
+
+**Netlify deployment fails**:
+- Check `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` are configured
+- Ensure build commands work locally
+- Verify netlify.toml configuration
+
+### Local Testing Before Push
+
+```bash
+# Test skills installation
+npm run list-skills
+
+# Validate Markdown
+find skills -name "*.md" -exec markdownlint {} \;
+
+# Test package
+npm pack --dry-run
+
+# Run security audit
+npm audit
+```
+
+### Release Process
+
+The repository uses automated releases:
+
+1. **Automatic**: Push to `main` triggers patch version bump
+2. **Manual**: Use GitLab CI "release:create" job for custom versions
+3. **Tagged releases**: Create GitHub release with matching tag (e.g., `v1.0.11`)
+
+### Environment Variables for CI
+
+Required GitLab CI variables:
+- `NPM_TOKEN`: NPM publishing token
+- `NETLIFY_AUTH_TOKEN`: Netlify API token
+- `NETLIFY_SITE_ID`: Netlify site ID for docs deployment
+
 ## Repository Structure
 
 ```

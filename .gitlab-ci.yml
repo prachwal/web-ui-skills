@@ -1,5 +1,9 @@
 # GitLab CI/CD Pipeline for Web UI Skills
 
+# This pipeline provides comprehensive testing, building, and deployment
+# for the Web UI Skills bundle. It mirrors GitHub Actions functionality
+# while providing additional GitLab-specific features.
+
 stages:
   - test
   - build
@@ -7,6 +11,10 @@ stages:
 
 variables:
   NODE_VERSION: "20"
+  # CI/CD variables that need to be set in GitLab:
+  # NPM_TOKEN - NPM publishing token
+  # NETLIFY_AUTH_TOKEN - Netlify API token for deployments
+  # NETLIFY_SITE_ID - Site ID for documentation deployment
 
 # Test stage - validate skills and installation
 test:skills:
