@@ -1,36 +1,36 @@
 ---
 name: auth0-cli
-description: "Instrukcja i gotowe skrypty do przyspieszenia operacji CRUD na obiektach Auth0 przy pomocy Auth0 CLI i bash."
-summary: Szybkie, operacyjne instrukcje i skrypty przyspieszające tworzenie, edycję i kasowanie obiektów Auth0 przy użyciu Auth0 CLI i lokalnych narzędzi bash.
+description: "Instructions and ready-made scripts to accelerate CRUD operations on Auth0 objects using Auth0 CLI and bash."
+summary: Quick, operational instructions and scripts to accelerate creating, editing, and deleting Auth0 objects using Auth0 CLI and local bash tools.
 ---
 
 # Quickstart
 
-- Wymagania: `auth0` CLI zainstalowane. Zaloguj się: `auth0 login` lub ustaw env: `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`.
-- Test: `auth0 clients list` powinno wypisać klientów w tenantcie testowym.
+- Requirements: `auth0` CLI installed. Log in: `auth0 login` or set env: `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`.
+- Test: `auth0 clients list` should list clients in the test tenant.
 
-## Instalacja CLI
+## CLI Installation
 
-Zobacz dokumentację instalacji: https://auth0.com/docs/deploy-monitor/auth0-cli#install-the-cli
+See installation documentation: https://auth0.com/docs/deploy-monitor/auth0-cli#install-the-cli
 
-Przykład dla Linux/macOS: `curl -sSfL https://raw.githubusercontent.com/auth0/auth0-cli/main/install.sh | sh -s -- -b /usr/local/bin`
+Example for Linux/macOS: `curl -sSfL https://raw.githubusercontent.com/auth0/auth0-cli/main/install.sh | sh -s -- -b /usr/local/bin`
 
-## Obsługiwane obiekty
+## Supported objects
 - Clients (applications)
-- Resource servers (APIs) - oprócz systemowych jak Auth0 Management API
+- Resource servers (APIs) - except system ones like Auth0 Management API
 - Roles
 - Users
 - Rules (deprecated, migrate to actions)
 
-## Najważniejsze zasady
-- Używaj tenancy testowego do eksperymentów.
-- Nigdy nie commituj sekretów; korzystaj z env vars i narzędzi secret manager.
-- Preferuj `--dry-run` lub `--preview` gdzie dostępne; waliduj payload `jq`.
-- Przy czyszczeniu: systemowe obiekty (jak Auth0 Management API) są pomijane.
+## Key principles
+- Use test tenancy for experiments.
+- Never commit secrets; use env vars and secret manager tools.
+- Prefer `--dry-run` or `--preview` where available; validate payload with `jq`.
+- When cleaning: system objects (like Auth0 Management API) are skipped.
 
 ## Szablony komend
 
-Create client (przykład):
+Create client (example):
 
 ```bash
 auth0 apps create --name "my-app" --type regular --callbacks "https://app.example/callback" --json > client.json
@@ -54,7 +54,7 @@ List:
 auth0 apps list --json | jq '.[] | {name: .name, client_id: .client_id}'
 ```
 
-Batch create users (przykład):
+Batch create users (example):
 
 ```bash
 cat users.csv | ./scripts/auth0.sh batch-create-users --connection "Username-Password-Authentication"
@@ -83,67 +83,67 @@ User minimalny (`user-template.json`):
 }
 ```
 
-## Bezpieczeństwo i środowisko
-- Przechowuj `AUTH0_CLIENT_SECRET` w managerze sekretów.
-- Używaj ról i least-privilege do tokenów CLI.
-- Wyłącz logowanie pełnych payloadów w production; w skryptach `set -o errexit -o nounset` i `set -o pipefail`.
+## Security and environment
+- Store `AUTH0_CLIENT_SECRET` in a secret manager.
+- Use roles and least-privilege for CLI tokens.
+- Disable full payload logging in production; in scripts use `set -o errexit -o nounset` and `set -o pipefail`.
 
-## Dry-run i walidacje
-- Gdy brak natywnego `--dry-run`, buduj JSON lokalnie i sprawdzaj `jq`:
+## Dry-run and validations
+- When native `--dry-run` is not available, build JSON locally and validate with `jq`:
 
 ```bash
 cat client-template.json | jq .
 ```
 
-- Sprawdzaj istnienie obiektu przed tworzeniem/kasowaniem:
+- Check object existence before creating/deleting:
 
 ```bash
 auth0 clients list --search "name:my-app" --json | jq 'length'
 ```
 
-## Rollback i checklisty operacyjne
-- Przed działaniem: backup configu: `auth0 tenants export --format json > backup.json` (jeśli dostępne dla twojej wersji CLI).
-- Przy tworzeniu: zachowaj wygenerowany `id` i `json` output w katalogu `./tmp/`.
-- Przy kasowaniu: zapisz `GET` odpowiednik obiektu w `./tmp/` aby móc przywrócić.
+## Rollback and operational checklists
+- Before action: backup config: `auth0 tenants export --format json > backup.json` (if available for your CLI version).
+- When creating: save generated `id` and `json` output in `./tmp/` directory.
+- When deleting: save `GET` equivalent of the object in `./tmp/` to be able to restore.
 
 ## `scripts/auth0.sh` helper
-Zobacz `scripts/auth0.sh` w repo — zawiera funkcje: `create-client`, `update-client`, `delete-client`, `batch-create-users`, `export-config`, `clear-all`.
+See `scripts/auth0.sh` in the repo — contains functions: `create-client`, `update-client`, `delete-client`, `batch-create-users`, `export-config`, `clear-all`.
 
-## Przykład czyszczenia wszystkiego
+## Example of clearing everything
 ```bash
 ./scripts/auth0.sh clear-all
 ```
-To usunie wszystkie apps, resource servers, connections (oprócz auth0), roles, users, rules, hooks.
+This will remove all apps, resource servers, connections (except auth0), roles, users, rules, hooks.
 
 ## FAQ / common errors
-- 401/403: sprawdź token/role i `AUTH0_DOMAIN`.
-- Validation errors: sprawdź payload JSON i wymagane pola.
+- 401/403: check token/role and `AUTH0_DOMAIN`.
+- Validation errors: check JSON payload and required fields.
 
 ## Verification / Quick checks
-- `auth0 clients list` — widoczność
-- `auth0 clients create --name test-cli --json` — utworzenie
-- `auth0 clients delete --client-id <id>` — usunięcie
+- `auth0 clients list` — visibility
+- `auth0 clients create --name test-cli --json` — creation
+- `auth0 clients delete --client-id <id>` — deletion
 
-## Integracja z Netlify
+## Integration with Netlify
 
-Netlify oferuje extension do integracji z Auth0, umożliwiającą automatyczne tworzenie aplikacji Auth0, łączenie tenantów i generowanie environment variables dla funkcji serverless.
+Netlify offers an extension for Auth0 integration, enabling automatic creation of Auth0 applications, tenant linking, and generation of environment variables for serverless functions.
 
-### Jak skonfigurować
-1. W Netlify UI: Sites > [your-site] > Site settings > Extensions > Install Auth0.
-2. Połącz tenant Auth0 (podaj domain, client_id, secret).
-3. Extension utworzy aplikację Auth0 dla twojego site'u i wygeneruje env vars jak `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`.
+### How to configure
+1. In Netlify UI: Sites > [your-site] > Site settings > Extensions > Install Auth0.
+2. Connect Auth0 tenant (provide domain, client_id, secret).
+3. Extension will create an Auth0 application for your site and generate env vars like `AUTH0_DOMAIN`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`.
 
-### Zarządzanie przez CLI
-Netlify CLI nie obsługuje bezpośrednio extensions — zarządzanie odbywa się przez UI Netlify. Użyj Auth0 CLI do zarządzania obiektami po skonfigurowaniu extension.
+### Management via CLI
+Netlify CLI does not directly support extensions — management is done through Netlify UI. Use Auth0 CLI to manage objects after configuring the extension.
 
-### Przykład workflow
-- Skonfiguruj extension w Netlify UI.
-- Użyj Auth0 CLI do tworzenia dodatkowych aplikacji/APIs: `auth0 apps create --name "netlify-app" --json`.
-- Deploy funkcji z env vars wygenerowanymi przez extension.
+### Example workflow
+- Configure extension in Netlify UI.
+- Use Auth0 CLI to create additional applications/APIs: `auth0 apps create --name "netlify-app" --json`.
+- Deploy functions with env vars generated by the extension.
 
-Zobacz docs: https://docs.netlify.com/integrations/auth0/
+See docs: https://docs.netlify.com/integrations/auth0/
 
 ## References
 - Auth0 CLI docs: https://auth0.com/docs/deploy-monitor/auth0-cli
-- `auth0 help` — lokalna dokumentacja CLI
+- `auth0 help` — local CLI documentation
 

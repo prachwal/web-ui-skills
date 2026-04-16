@@ -1,22 +1,22 @@
 ---
 name: netlify-cli
-description: "Instrukcja i gotowe skrypty do zarządzania pełnym cyklem życia aplikacji w Netlify przy pomocy Netlify CLI i bash."
-summary: Szybkie, operacyjne instrukcje i skrypty przyspieszające tworzenie, deployment, zarządzanie i kasowanie aplikacji w Netlify przy użyciu CLI i lokalnych narzędzi bash.
+description: "Instructions and ready-made scripts for managing the full lifecycle of applications in Netlify using Netlify CLI and bash."
+summary: Quick, operational instructions and scripts to accelerate creating, deploying, managing, and deleting applications in Netlify using CLI and local bash tools.
 ---
 
 # Quickstart
 
-- Wymagania: `netlify` CLI zainstalowane. Zaloguj się: `netlify login`.
-- Test: `netlify status` powinno pokazać połączony site lub brak.
-- Przykład: Utwórz site, zdeployuj statyczną stronę, zarządzaj env vars, skasuj.
+- Requirements: `netlify` CLI installed. Log in: `netlify login`.
+- Test: `netlify status` should show linked site or none.
+- Example: Create site, deploy static page, manage env vars, delete.
 
-## Instalacja CLI
+## CLI Installation
 
-Zobacz dokumentację instalacji: https://docs.netlify.com/cli/get-started/
+See installation documentation: https://docs.netlify.com/cli/get-started/
 
-Przykład dla Linux/macOS: `npm install -g netlify-cli`
+Example for Linux/macOS: `npm install -g netlify-cli`
 
-Lub przez Homebrew: `brew install netlify-cli`
+Or via Homebrew: `brew install netlify-cli`
 
 ## Tworzenie site'u
 
@@ -25,25 +25,25 @@ Lub przez Homebrew: `brew install netlify-cli`
 netlify create "My Static Site"
 ```
 
-### Łączenie z istniejącym repo (continuous deployment)
+### Linking to existing repo (continuous deployment)
 ```bash
 netlify init
 ```
 
-### Manualne łączenie
+### Manual linking
 ```bash
 netlify link
 ```
 
-## Przygotowanie przykładu
+## Preparing an example
 
-Stwórz prosty projekt statycznej strony w katalogu `examples/netlify-example/`:
+Create a simple static site project in the `examples/netlify-example/` directory:
 
 - `index.html`
 - `styles.css`
-- `netlify.toml` (ważne dla statycznych stron!)
+- `netlify.toml` (important for static sites!)
 
-Przykład `netlify.toml` dla statycznej strony:
+Example `netlify.toml` for static site:
 
 ```toml
 [build]
@@ -51,9 +51,9 @@ Przykład `netlify.toml` dla statycznej strony:
   command = ""
 ```
 
-To zapewnia, że Netlify publikuje pliki bezpośrednio bez build command.
+This ensures Netlify publishes files directly without a build command.
 
-Przykład `index.html`:
+Example `index.html`:
 ```html
 <!DOCTYPE html>
 <html lang="en">
@@ -71,7 +71,7 @@ Przykład `index.html`:
 
 ## Deployment
 
-### Manualny deployment
+### Manual deployment
 ```bash
 cd examples/netlify-example
 netlify deploy
@@ -88,9 +88,9 @@ netlify deploy --alias draft
 ```
 
 ### Continuous deployment
-Po `netlify init`, każdy push do repo automatycznie deployuje.
+After `netlify init`, every push to the repo automatically deploys.
 
-## Zarządzanie aspektami
+## Managing aspects
 
 ### Environment variables
 ```bash
@@ -108,7 +108,7 @@ netlify env:unset API_KEY
 ```
 
 ### Functions (serverless)
-Jeśli projekt ma functions w `netlify/functions/`:
+If the project has functions in `netlify/functions/`:
 ```bash
 netlify functions:list
 ```
@@ -128,32 +128,32 @@ netlify build --dry
 ```
 
 ### Domains
-Konfiguracja custom domains przez UI: Sites > [site] > Domain management.
+Configure custom domains through UI: Sites > [site] > Domain management.
 
-## Kasowanie site'u
+## Deleting a site
 
-### Przez CLI
+### Via CLI
 ```bash
-# Sprawdź listę site'ów
+# Check list of sites
 netlify sites:list
 
-# Usuń po ID
+# Delete by ID
 netlify sites:delete <SITE_ID>
 
-# Usuń bez pytania
+# Delete without prompt
 netlify sites:delete <SITE_ID> --force
 ```
 
-**Uwaga:** To permanentnie usuwa site, wszystkie deploye, env vars, functions itp.
+**Note:** This permanently deletes the site, all deploys, env vars, functions, etc.
 
-### Alternatywa przez UI
-Jeśli preferujesz UI: Sites > [site] > Site settings > Danger zone > Delete site.
+### Alternative via UI
+If you prefer UI: Sites > [site] > Site settings > Danger zone > Delete site.
 
 ## `scripts/netlify.sh` helper
 
-Zobacz `scripts/netlify.sh` w repo — zawiera funkcje: `create-site`, `deploy-example`, `set-env`, `cleanup`.
+See `scripts/netlify.sh` in the repo — contains functions: `create-site`, `deploy-example`, `set-env`, `cleanup`.
 
-## Przykład pełnego cyklu
+## Example of full cycle
 ```bash
 # Create site
 ./scripts/netlify.sh create-site "My Site"
@@ -168,21 +168,21 @@ Zobacz `scripts/netlify.sh` w repo — zawiera funkcje: `create-site`, `deploy-e
 ./scripts/netlify.sh cleanup
 ```
 
-## Bezpieczeństwo i środowisko
-- Przechowuj secrets w env vars, nie w kodzie.
-- Używaj personal access tokens dla CI: https://app.netlify.com/user/applications#personal-access-tokens
-- Wyłącz publiczny dostęp do draftów jeśli wrażliwe.
+## Security and environment
+- Store secrets in env vars, not in code.
+- Use personal access tokens for CI: https://app.netlify.com/user/applications#personal-access-tokens
+- Disable public access to drafts if sensitive.
 
 ## FAQ / common errors
-- 401: Sprawdź login `netlify login`.
-- Build fails: Sprawdź `netlify.toml` i build settings.
-- Functions not deploying: Upewnij się, że `node_modules` są zainstalowane.
+- 401: Check login `netlify login`.
+- Build fails: Check `netlify.toml` and build settings.
+- Functions not deploying: Make sure `node_modules` are installed.
 
 ## Verification / Quick checks
-- `netlify status` — status site'u
-- `netlify sites:list` — lista site'ów
-- `netlify env:list` — lista env vars
+- `netlify status` — site status
+- `netlify sites:list` — list of sites
+- `netlify env:list` — list of env vars
 
 ## References
 - Netlify CLI docs: https://docs.netlify.com/cli/get-started/
-- `netlify --help` — lokalna dokumentacja CLI
+- `netlify --help` — local CLI documentation

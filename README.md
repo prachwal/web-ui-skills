@@ -1,5 +1,8 @@
 # Web UI Skills Bundle
 
+![GitHub version](https://img.shields.io/github/v/release/prachwal/web-ui-skills)
+![npm version](https://img.shields.io/npm/v/web-ui-skills)
+
 This repository bundles Codex skills for building professional web applications.
 
 ## Included skills
@@ -58,6 +61,36 @@ npx web-ui-skills --list   # show detected skills and structural warnings
 npx web-ui-skills --help   # show help
 ```
 
+### Update existing installation
+
+To update skills to the latest version:
+
+```bash
+npx web-ui-skills@latest
+```
+
+Or reinstall from source:
+
+```bash
+cd /path/to/web-ui-skills
+npm run install-all  # installs to all supported tool directories
+```
+
+### Verify installation
+
+Check if skills are properly installed:
+
+```bash
+# For Codex
+ls ~/.codex/skills/ | grep web-
+
+# For Claude
+ls ~/.claude/skills/ | grep web-
+
+# For Copilot
+ls ~/.copilot/skills/ | grep web-
+```
+
 ### Shell script (legacy)
 
 Run the installer from the repository root:
@@ -67,6 +100,17 @@ Run the installer from the repository root:
 ```
 
 By default, skills are copied to `${CODEX_HOME:-$HOME/.codex}/skills`.
+
+### Manual installation
+
+Clone the repository and run the installer:
+
+```bash
+git clone https://github.com/prachwal/web-ui-skills.git
+cd web-ui-skills
+npm install
+node bin/install.js --codex --claude --copilot --kilo
+```
 
 ## Release publishing
 

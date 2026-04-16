@@ -1,23 +1,23 @@
 # Netlify Example
 
-Prosty przykład statycznej strony HTML do deploymentu w Netlify.
+Simple HTML static site example for deployment on Netlify.
 
-## Zawartość
+## Contents
 
-- `index.html` - Główna strona
-- `styles.css` - Stylizacja
-- `netlify.toml` - Konfiguracja Netlify (publish current dir, no build command)
+- `index.html` - Main page
+- `styles.css` - Styling
+- `netlify.toml` - Netlify configuration (publish current dir, no build command)
 
-## Jak użyć
+## How to use
 
 ```bash
 cd examples/netlify-example
 netlify deploy --prod
 ```
 
-**Uwaga:** `netlify.toml` zapewnia, że Netlify traktuje to jako statyczną stronę bez build command.
+**Note:** `netlify.toml` ensures Netlify treats this as a static site without build command.
 
-## Zawartość
+## Contents
 
-- `index.html` - Główna strona
-- `styles.css` - Stylizacja
+- `index.html` - Main page
+- `styles.css` - Styling
