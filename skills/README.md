@@ -22,6 +22,7 @@ Repository-local guidance for building TypeScript web apps, frontend workflows, 
 - `web-data-fetching` for loading/error/empty states, cancellation, retry, cache invalidation, and typed API boundaries.
 - `web-observability` for frontend errors, analytics events, Core Web Vitals, and privacy-safe telemetry.
 - `web-deployment` for env vars, preview deploys, redirects, cache headers, SPA fallback, and CI release checks.
+- `vercel-endpoints` for Vercel API routes, function handlers, SPA rewrite exclusions, and endpoint debugging.
 - `web-auth-ux` for login, MFA, session expiry, password reset, and role/permission UI flows.
 - `web-privacy` for consent, cookie banners, opt-in/opt-out analytics, PII handling, and compliance-aware patterns.
 - `web-content` for CMS integration, rich text safety, empty states, error pages, and content schema.
