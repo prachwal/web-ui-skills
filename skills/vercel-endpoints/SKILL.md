@@ -37,7 +37,7 @@ Use this skill when building a Vercel-hosted app that ships:
 3. **Pin Bun runtime explicitly** in `vercel.json` with `"bunVersion": "1.x"`. Only `"1.x"` is valid — Vercel manages minor versions. See [`references/03-vercel-json.md`](references/03-vercel-json.md).
 4. **SPA rewrites must exclude `/api/*`**. Use a negative-lookahead source like `"/((?!api/).*)"` so function routes are never rewritten to `index.html`. Full patterns and traps in [`references/04-spa-fallback.md`](references/04-spa-fallback.md).
 5. **Return JSON via `Response.json(...)`** — not string bodies with manual `Content-Type`. Clients parsing JSON break silently otherwise.
-6. **Keep handlers small**. Route-specific logic stays in the route file; shared code goes in a `lib/` or `api/_lib/` folder that bundles cleanly. Avoid helper indirection that confuses Vercel's bundler.
+6. **Keep handlers small**. Route-specific logic stays in the route file. Shared code is allowed, but keep it minimal and import it with explicit `.js` specifiers when the build pipeline expects ESM-style resolution. Verify the production deploy resolves the helper before relying on it.
 7. **Test deployed URLs directly**, not only `vercel dev`. Rewrites and bundling behave differently in dev vs. prod.
 8. **Avoid `Bun.serve` inside functions** — it is not supported on Vercel Functions. Use the `fetch` export. Other Bun APIs (`Bun.sql`, `Bun.s3`, `Bun.password`, `Bun.file`) are fine.
 
@@ -121,6 +121,7 @@ Details, POST/PUT patterns, body parsing, streaming, and `waitUntil` in [`refere
 - `curl -I https://<deploy>/api/does-not-exist` → 404 from Vercel, **not** HTML.
 - If `/api/...` returns HTML, your rewrite is too greedy — go to [`references/04-spa-fallback.md`](references/04-spa-fallback.md).
 - If `/api/...` returns `FUNCTION_INVOCATION_FAILED`, check deploy logs per [`references/07-debugging.md`](references/07-debugging.md).
+- If an import fails with `ERR_MODULE_NOT_FOUND`, check whether Vercel expects the emitted ESM path, usually `.js`, and verify the helper actually ships in the function bundle.
 
 ---
 
