@@ -10,6 +10,7 @@ Repository-local guidance for building TypeScript web apps, frontend workflows, 
 ## Frontend workflow
 
 - `preact-ui` for Preact component structure, state, routing, data fetching, forms, and tests.
+- `vue-ui` for Vue 3 component structure, Composition API, Pinia state, Vue Router, Vue I18n, Vite, Vitest, and Vue Test Utils.
 - `scss-system` for design tokens, component styles, theming, and Sass architecture.
 - `storybook-ui` for component docs, story-driven development, interaction tests, accessibility checks, and visual regression workflows.
 - `web-accessibility-standards` for accessible implementation and `a11y-review` for audits.

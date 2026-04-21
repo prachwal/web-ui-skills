@@ -15,6 +15,7 @@ This repository bundles Codex skills for building professional web applications.
 ## Included skills
 
 - `preact-ui` - component architecture, MVVM, signals, forms, routing, and professional UI patterns
+- `vue-ui` - Vue 3 apps, SFC components, Pinia state, Vue Router, Vue I18n, Vite, and Vitest
 - `scss-system` - design tokens, mixins, architecture, responsive theming
 - `web-accessibility-standards` - accessible HTML, ARIA, WCAG implementation
 - `a11y-review` - accessibility audits and QA
@@ -155,7 +156,7 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
-- `preact-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
+- `preact-ui`, `vue-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
 - `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover production frontend concerns.
 - `web-auth-ux`, `web-privacy`, `web-content`, `web-pwa`, and `web-design-review` cover specialized product and compliance workflows.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.
