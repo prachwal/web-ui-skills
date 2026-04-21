@@ -40,6 +40,11 @@ This repository bundles Codex skills for building professional web applications.
 - `mongodb-netlify` - MongoDB Atlas on Netlify, connection reuse, pooling, Stable API, query safety
 - `neon-netlify` - Neon and Netlify DB on Netlify, pooled Postgres access, branching, migration-safe workflows
 
+- `frontend-ui` - React TSX page & component patterns, Tailwind v4 rules, layout prompts, testing coverage
+- `project-tooling` - Vite, Vitest, TypeScript, ESLint, and build/test tooling guidance
+- `docs-instructions` - guidance for repository docs, Copilot instructions, prompts, and LLM evals
+- `vercel-deploy` - Vercel deployment, env var rules, SPA fallback, and preview verification
+
 ## Install
 
 ### npx (recommended)

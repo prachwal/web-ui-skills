@@ -76,20 +76,26 @@ Similar to other tools, Kilo discovers skills from the configured skills directo
 
 1. **Fork the repository** on GitHub
 2. **Create a feature branch** for your changes:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
 3. **Make your changes** following the contribution guidelines
 4. **Test your changes** locally
 5. **Commit your changes** with descriptive messages:
+
    ```bash
    git add .
    git commit -m "feat: add new skill for [feature]"
    ```
+
 6. **Push your changes** to your fork:
+
    ```bash
    git push origin feature/your-feature-name
    ```
+
 7. **Create a Pull Request** on GitHub
 
 ### Commit Message Convention
@@ -135,6 +141,7 @@ git push --force-with-lease
 ### Common Git Scenarios
 
 **Divergent branches** (local and remote have different commits):
+
 ```bash
 # Option 1: Merge (creates merge commit)
 git pull --no-rebase
@@ -147,6 +154,7 @@ git reset --hard origin/main
 ```
 
 **Merge conflicts**:
+
 ```bash
 # Abort merge/rebase
 git merge --abort
@@ -159,6 +167,7 @@ git commit
 ```
 
 **Stash changes before pull**:
+
 ```bash
 git stash
 git pull --rebase
@@ -202,16 +211,19 @@ git merge upstream/main
 ### GitLab CI Pipeline Issues
 
 **Pipeline fails on test stage**:
+
 - Check that all Markdown files are valid
 - Ensure `npm ci` completes successfully
 - Verify skill installation works in CI environment
 
 **NPM publish fails**:
+
 - Check `NPM_TOKEN` is set in GitLab CI variables
 - Ensure package version is unique
 - Verify package.json is valid
 
 **Netlify deployment fails**:
+
 - Check `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` are configured
 - Ensure build commands work locally
 - Verify netlify.toml configuration
@@ -243,13 +255,14 @@ The repository uses automated releases:
 ### Environment Variables for CI
 
 Required GitLab CI variables:
+
 - `NPM_TOKEN`: NPM publishing token
 - `NETLIFY_AUTH_TOKEN`: Netlify API token
 - `NETLIFY_SITE_ID`: Netlify site ID for docs deployment
 
 ## Repository Structure
 
-```
+```text
 web-ui-skills/
 ├── skills/                    # Individual skill definitions
 │   ├── preact-ui/            # Preact component patterns
@@ -269,7 +282,7 @@ web-ui-skills/
 
 Each skill must follow this structure:
 
-```
+```text
 skills/[skill-name]/
 ├── SKILL.md                 # Main skill documentation
 └── references/              # Supporting documentation

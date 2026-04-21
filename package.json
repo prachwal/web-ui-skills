@@ -18,7 +18,10 @@
   ],
   "scripts": {
     "install-skills": "node bin/install.js",
-    "list-skills": "node bin/install.js --list"
+    "list-skills": "node bin/install.js --list",
+    "check-md-refs": "node scripts/check-md-refs.js .",
+    "lint:md": "markdownlint --dot '**/*.md'",
+    "lint:md:fix": "markdownlint --dot '**/*.md' --fix"
   },
   "keywords": [
     "codex",
@@ -51,7 +54,11 @@
     "netlify"
   ],
   "license": "MIT",
+  "devDependencies": {
+    "markdownlint-cli": "^0.48.0"
+  },
   "engines": {
     "node": ">=16"
   }
+
 }

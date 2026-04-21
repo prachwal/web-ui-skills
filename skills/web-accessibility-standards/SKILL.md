@@ -165,20 +165,15 @@ For CLI and AI agent workflows, use these approaches when reviewing generated co
 - Screen readers to test with: NVDA + Chrome on Windows, VoiceOver + Safari on macOS/iOS, TalkBack on Android.
 
 ---
-
 ## When to consult which reference
 
 - Read [references/wcag-22.md](references/wcag-22.md) when the task needs standards mapping, review findings, or precise success criteria.
 - Read [references/aria-apg.md](references/aria-apg.md) when implementing widgets, landmarks, names, descriptions, live regions, or keyboard interaction patterns.
 - Read [references/responsive-mobile-first.md](references/responsive-mobile-first.md) when building layouts, breakpoints, or touch/mobile interactions.
-- For audits, findings, and QA checklists, switch to [a11y-review/SKILL.md](a11y-review/SKILL.md).
-
----
+- For audits, findings, and QA checklists, switch to [a11y-review/SKILL.md](../a11y-review/SKILL.md).
 
 ## Output expectations
 
-When producing code or review guidance:
-- Explain the semantic choice first, then provide the implementation.
 - Call out the relevant WCAG 2.2 criterion (number and name) when the change directly maps to one.
 - Mention keyboard and focus implications for every interactive component.
 - Include responsive/mobile implications when layout, targets, or touch interaction are involved.
