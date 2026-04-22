@@ -109,9 +109,11 @@ function getTopLevelSkills(skillsSource = getSkillsSource()) {
 function getSkillEntries(skillsSource = getSkillsSource()) {
   return getTopLevelSkills(skillsSource).map((skill) => {
     const skillFile = path.join(skillsSource, skill, SKILL_FILE);
+    const metadata = readSkillMetadata(skillFile);
     return {
       dir: skill,
-      name: readSkillName(skillFile) || skill,
+      name: metadata.name || skill,
+      description: metadata.description || '',
       path: path.join(skillsSource, skill),
     };
   });
@@ -162,13 +164,51 @@ function findSkillFiles(dir, results = []) {
   return results;
 }
 
-function readSkillName(skillFile) {
+function readSkillMetadata(skillFile) {
   const content = fs.readFileSync(skillFile, 'utf8');
   const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return null;
+  if (!match) return { name: null, description: '' };
 
-  const nameMatch = match[1].match(/^name:\s*(.+)\s*$/m);
-  return nameMatch ? nameMatch[1].trim().replace(/^['"]|['"]$/g, '') : null;
+  const frontmatter = match[1];
+  const readField = (field) => {
+    const fieldMatch = frontmatter.match(new RegExp(`^${field}:\\s*(.+)\\s*$`, 'm'));
+    return fieldMatch ? fieldMatch[1].trim().replace(/^['"]|['"]$/g, '') : null;
+  };
+
+  return {
+    name: readField('name'),
+    description: readField('description') || '',
+  };
+}
+
+function readSkillName(skillFile) {
+  return readSkillMetadata(skillFile).name;
+}
+
+function getSkillDetail(skillName, skillsSource = getSkillsSource()) {
+  const entries = getSkillEntries(skillsSource);
+  const target = skillName.toLowerCase();
+  const entry = entries.find(
+    (item) => item.dir.toLowerCase() === target || item.name.toLowerCase() === target,
+  );
+
+  if (!entry) return null;
+
+  return {
+    name: entry.name,
+    folder: entry.dir,
+    description: entry.description,
+    path: entry.path,
+  };
+}
+
+function getAllSkillDetails(skillsSource = getSkillsSource()) {
+  return getSkillEntries(skillsSource).map((entry) => ({
+    name: entry.name,
+    folder: entry.dir,
+    description: entry.description,
+    path: entry.path,
+  }));
 }
 
 function validateSkillTree(skillsSource = getSkillsSource()) {
@@ -659,6 +699,9 @@ module.exports = {
   printHelp,
   listGroups,
   readSkillName,
+  readSkillMetadata,
+  getSkillDetail,
+  getAllSkillDetails,
   resolveToolDir,
   resolveProjectToolDir,
   resolveToolDirs,

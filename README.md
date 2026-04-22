@@ -14,37 +14,54 @@ This repository bundles Codex skills for building professional web applications.
 
 ## Included skills
 
-- `preact-ui` - component architecture, MVVM, signals, forms, routing, and professional UI patterns
-- `vue-ui` - Vue 3 apps, SFC components, Pinia state, Vue Router, Vue I18n, Vite, and Vitest
-- `scss-system` - design tokens, mixins, architecture, responsive theming
-- `web-accessibility-standards` - accessible HTML, ARIA, WCAG implementation
-- `a11y-review` - accessibility audits and QA
-- `web-performance` - Core Web Vitals, image optimization, bundle splitting
-- `web-i18n` - internationalization, RTL, locale-aware formatting
-- `web-testing` - Playwright E2E, component tests, visual regression, CI reporting
-- `storybook-ui` - Storybook setup, stories, interaction tests, accessibility, visual testing
-- `web-seo-metadata` - route metadata, canonical URLs, social previews, sitemaps, structured data
-- `web-forms` - accessible forms, validation, async submit states, error handling, spam resistance
-- `web-data-fetching` - loading/error/empty states, cancellation, retry, cache invalidation, typed API boundaries
-- `web-observability` - frontend errors, analytics events, Core Web Vitals, privacy-safe telemetry
-- `web-deployment` - env vars, preview deploys, redirects, cache headers, SPA fallback, CI checks
-- `web-auth-ux` - login, MFA, session expiry, password reset, role/permission UI, secure token handling
-- `web-privacy` - consent management, cookie banners, opt-in/opt-out, data minimization, PII handling
-- `web-content` - CMS integration, rich text safety, empty states, error pages, content schema
-- `web-pwa` - installability, service workers, offline support, push notifications, app manifest
-- `web-design-review` - design token alignment, spacing/typography/color review, responsive and dark mode checks
-- `web-security` - XSS, CSP, session management, security headers
-- `netlify-serverless` - current Netlify Functions and Edge model, auth, CORS, rate limiting, deployment patterns
-- `netlify-typescript-api` - TypeScript API structure, `Request`/`Response` handlers, validation, response contracts
-- `netlify-database-security` - runtime env secrets, least privilege, storage choices, safe database access
-- `netlify-api-performance` - cold starts, query efficiency, cache strategy, regional observability
-- `mongodb-netlify` - MongoDB Atlas on Netlify, connection reuse, pooling, Stable API, query safety
-- `neon-netlify` - Neon and Netlify DB on Netlify, pooled Postgres access, branching, migration-safe workflows
+### Foundation
 
-- `frontend-ui` - React TSX page & component patterns, Tailwind v4 rules, layout prompts, testing coverage
-- `project-tooling` - Vite, Vitest, TypeScript, ESLint, and build/test tooling guidance
-- `docs-instructions` - guidance for repository docs, Copilot instructions, prompts, and LLM evals
-- `vercel-deploy` - Vercel deployment, env var rules, SPA fallback, and preview verification
+- `typescript-fundamentals` - TypeScript code structure, type safety, patterns, naming, formatting, and module organization.
+- `eslint-config` - ESLint configuration for TypeScript projects, including flat config, Preact/React, Node.js, Netlify Functions, and monorepos.
+- `project-tooling` - Vite, Vitest, TypeScript, ESLint, package scripts, path aliases, and build/test tooling.
+- `docs-instructions` - repository Markdown, Copilot instructions, Codex AGENTS.md, repo skills, prompts, and LLM eval tasks.
+
+### UI
+
+- `preact-ui` - Preact pages and components, MVVM architecture, signals, hooks, forms, routing, data fetching, accessibility, SCSS integration, and tests.
+- `vue-ui` - Vue 3 applications and components, Composition API, SFC structure, Pinia state, Vue Router, Vue I18n, Vite, Vitest, Vue Test Utils, accessibility, and production app architecture.
+- `scss-system` - SCSS-based design systems, component libraries, tokens, mixins, functions, color palettes, typography, spacing, responsiveness, theming, and folder architecture.
+- `storybook-ui` - Storybook setup, CSF stories, interaction tests, Vitest addon, accessibility, visual testing, and component documentation workflows.
+- `frontend-ui` - React TSX pages and components, Tailwind v4 styling, accessibility, and Testing Library coverage.
+
+### Quality
+
+- `web-accessibility-standards` - accessible web interfaces, semantic HTML, ARIA, keyboard support, responsive mobile-first layouts, focus management, dynamic content, and automated accessibility checks.
+- `a11y-review` - accessibility reviews for WCAG mapping, ARIA misuse, keyboard access, focus management, responsive/mobile behavior, and QA findings.
+- `web-testing` - web UI test strategy, Playwright end-to-end tests, regression coverage, stable locators, visual comparisons, browser compatibility, progressive enhancement, and CI reporting.
+- `web-design-review` - visual design implementation against design specs, including spacing, typography, color, responsive behavior, component consistency, dark mode, and token alignment.
+
+### Frontend Product
+
+- `web-performance` - web app performance, Core Web Vitals, loading speed, rendering, asset delivery, code splitting, caching, and image optimization.
+- `web-i18n` - internationalized web UIs, locale-aware formatting, language tags, directionality, RTL layouts, pluralization, and translatable copy.
+- `web-seo-metadata` - SEO, route metadata, social previews, robots directives, sitemaps, canonical URLs, and structured data.
+- `web-forms` - accessible forms, validation, error messaging, pending and success states, async submit flows, spam resistance, and form tests.
+- `web-data-fetching` - frontend data fetching, loading/error/empty states, retry, cancellation, cache invalidation, optimistic updates, and typed API boundaries.
+- `web-observability` - frontend observability, error reporting, analytics events, Core Web Vitals collection, logging, privacy-safe telemetry, and release diagnostics.
+- `web-deployment` - frontend web app deployment, environment variables, preview deploys, redirects, cache headers, SPA fallback, static assets, CI gates, and release checks.
+- `web-auth-ux` - login, registration, password reset, MFA, session expiry, role/permission UI flows, secure token handling, and auth error recovery.
+- `web-privacy` - consent management, cookie banners, analytics opt-in/out, tracking controls, data minimization, privacy-safe telemetry, and compliance-aware frontend patterns.
+- `web-content` - content-heavy pages, CMS integrations, editorial workflows, empty states, error pages, marketing pages, rich text rendering, and content safety.
+- `web-pwa` - installability, service workers, offline support, background sync, push notifications, and app manifest configuration.
+- `web-security` - frontend security concerns, XSS prevention, safe rendering, CSP, CSRF awareness, token handling, secure storage, and secure links/forms.
+
+### Platform
+
+- `netlify-serverless` - Netlify Functions, Edge Functions, Background and Scheduled Functions, runtime capabilities, routing primitives, and deployment-time constraints.
+- `netlify-typescript-api` - TypeScript API structure, `Request`/`Response` handlers, validation, response contracts, and testable request/response flow.
+- `netlify-database-security` - runtime env secrets, least privilege, safe data access patterns, and storage choices for Netlify-connected databases.
+- `netlify-api-performance` - Netlify backend API speed, cost, cold starts, database efficiency, caching, regional behavior, and observability.
+- `netlify-cli` - Netlify CLI workflows for managing the full lifecycle of applications.
+- `mongodb-netlify` - MongoDB Atlas or MongoDB-compatible deployments on Netlify, connection reuse, pooling, Stable API, query safety, and serverless patterns.
+- `neon-netlify` - Neon Postgres on Netlify, branching workflows, pooled connections, query safety, and operational patterns.
+- `vercel-deploy` - Vercel deployment behavior, env vars, SPA fallback routing, and production build settings.
+- `vercel-endpoints` - Vercel API endpoints, route handlers, SPA fallback routing, Bun runtime configuration, local development with `vercel dev`, and deployment debugging.
 
 ## Install
 
@@ -202,6 +219,7 @@ That writes into `./.codex/skills` inside the project instead of `~/.codex/skill
 A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/codex-mcp-config.json), and a generic template is available at [examples/mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/mcp-config.json).
 
 It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_skills`, and `remove_skills`.
+It also exposes `get_skill_info`, `get_group_info`, and `list_skills_info` for inspecting skill and group metadata before installing anything.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
 Pass `project: true` and `projectRoot` in MCP calls when you want the skills copied into the current project instead of global user folders.

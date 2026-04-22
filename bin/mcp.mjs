@@ -59,6 +59,27 @@ function resolveTargetDirs({ project = false, projectRoot } = {}) {
   });
 }
 
+function resolveSkillDetail(name) {
+  return installer.getSkillDetail(name);
+}
+
+function resolveGroupDetail(name) {
+  const groups = installer.loadSkillGroups();
+  const group = groups[String(name).toLowerCase()];
+  if (!group) return null;
+
+  return {
+    name: String(name).toLowerCase(),
+    description: group.description,
+    skills: group.skills.map((skillName) => resolveSkillDetail(skillName) || {
+      name: skillName,
+      folder: skillName,
+      description: '',
+      path: null,
+    }),
+  };
+}
+
 function resolveClientName(value) {
   if (!value) return null;
 
@@ -261,6 +282,7 @@ function createServer(options = {}) {
             'Web UI Skills MCP guide:',
             '- Use search_skills to find a skill by folder name or frontmatter name.',
             '- Use list_groups to inspect curated skill bundles before installing.',
+            '- Use get_skill_info to inspect one skill, get_group_info to inspect one group with skill metadata, and list_skills_info to inspect all skills.',
             '- Use install_skills to install one or more skills or groups.',
             '- Use update_skills to refresh installed skills for selected tools.',
             '- Use remove_skills to remove specific skills, groups, or everything from a selected tool scope.',
@@ -312,6 +334,49 @@ function createServer(options = {}) {
         })),
       });
     },
+  );
+
+  server.registerTool(
+    'get_skill_info',
+    {
+      title: 'Get skill info',
+      description: 'Get detailed information for one skill, including its description and filesystem path.',
+      inputSchema: z.object({
+        name: z.string().min(1),
+      }),
+    },
+    async ({ name }) => jsonContent({
+      client: context.client,
+      skill: resolveSkillDetail(name),
+    }),
+  );
+
+  server.registerTool(
+    'get_group_info',
+    {
+      title: 'Get group info',
+      description: 'Get a group with its description and detailed skill metadata for each skill in the group.',
+      inputSchema: z.object({
+        name: z.string().min(1),
+      }),
+    },
+    async ({ name }) => jsonContent({
+      client: context.client,
+      group: resolveGroupDetail(name),
+    }),
+  );
+
+  server.registerTool(
+    'list_skills_info',
+    {
+      title: 'List skills info',
+      description: 'List all available skills with detailed metadata, including folder, name, description, and path.',
+      inputSchema: z.object({}),
+    },
+    async () => jsonContent({
+      client: context.client,
+      skills: installer.getAllSkillDetails(),
+    }),
   );
 
   server.registerTool(

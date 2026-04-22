@@ -102,6 +102,45 @@ describe('prompts', () => {
   });
 });
 
+describe('skill info tools', () => {
+  test('returns detailed info for one skill', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_info.handler({ name: 'preact-ui' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.skill.name, 'preact-ui');
+    assert.equal(payload.skill.folder, 'preact-ui');
+    assert.match(payload.skill.description, /Use when designing, refactoring, or reviewing Preact pages and components/);
+    assert.match(payload.skill.path, /skills\/preact-ui$/);
+  });
+
+  test('returns detailed info for one group', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_group_info.handler({ name: 'ui' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.group.name, 'ui');
+    assert.equal(payload.group.description, 'UI framework, component, and styling workflows.');
+    assert.equal(payload.group.skills.length, 4);
+    assert.deepEqual(
+      payload.group.skills.map((skill) => skill.name),
+      ['preact-ui', 'vue-ui', 'scss-system', 'storybook-ui'],
+    );
+    assert.ok(payload.group.skills.every((skill) => typeof skill.path === 'string' && skill.path.endsWith(skill.folder)));
+  });
+
+  test('returns detailed info for all skills', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.list_skills_info.handler({});
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.ok(Array.isArray(payload.skills));
+    assert.ok(payload.skills.length > 0);
+    assert.ok(payload.skills.some((skill) => skill.name === 'preact-ui'));
+    assert.ok(payload.skills.every((skill) => skill.name && skill.folder && skill.path));
+  });
+});
+
 describe('removal', () => {
   test('removes every installed skill in one tool scope', () => {
     const home = createTempHome();
