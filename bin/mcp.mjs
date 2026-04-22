@@ -80,6 +80,49 @@ function resolveGroupDetail(name) {
   };
 }
 
+function resolveOverlayInfo({ project = false, projectRoot = process.cwd() } = {}) {
+  const repoSource = installer.getSkillsSource();
+  const userSource = installer.getUserSkillsSource();
+  const projectSource = installer.getProjectSkillsSource(projectRoot);
+  const effectiveSources = project ? [repoSource, userSource, projectSource] : [repoSource, userSource];
+
+  const sources = [
+    { scope: 'repo', priority: 0, path: repoSource },
+    { scope: 'user', priority: 1, path: userSource },
+    { scope: 'project', priority: 2, path: projectSource },
+  ].map((source) => {
+    const exists = fs.existsSync(source.path);
+    const skills = exists ? installer.getTopLevelSkills(source.path) : [];
+    const groups = exists ? Object.keys(installer.loadSkillGroups(source.path)).sort() : [];
+
+    return {
+      ...source,
+      exists,
+      active: source.scope !== 'project' || project,
+      skillCount: skills.length,
+      groupCount: groups.length,
+      skills,
+      groups,
+    };
+  });
+
+  const mergedSkills = installer.getTopLevelSkills(effectiveSources);
+  const mergedGroups = Object.keys(installer.loadSkillGroups(effectiveSources)).sort();
+
+  return {
+    project,
+    projectRoot: project ? projectRoot : null,
+    precedence: ['repo', 'user', 'project'],
+    sources,
+    merged: {
+      skillCount: mergedSkills.length,
+      groupCount: mergedGroups.length,
+      skills: mergedSkills,
+      groups: mergedGroups,
+    },
+  };
+}
+
 function resolveClientName(value) {
   if (!value) return null;
 
@@ -282,6 +325,8 @@ function createServer(options = {}) {
             'Web UI Skills MCP guide:',
             '- Use search_skills to find a skill by folder name or frontmatter name.',
             '- Use list_groups to inspect curated skill bundles before installing.',
+            '- Use list_overlays to inspect repo, user, and project sources and precedence.',
+            '- Use sync_overlays to materialize the merged skill view into the user or project overlay directory.',
             '- Use get_skill_info to inspect one skill, get_group_info to inspect one group with skill metadata, and list_skills_info to inspect all skills.',
             '- Use install_skills to install one or more skills or groups.',
             '- Use update_skills to refresh installed skills for selected tools.',
@@ -334,6 +379,44 @@ function createServer(options = {}) {
         })),
       });
     },
+  );
+
+  server.registerTool(
+    'list_overlays',
+    {
+      title: 'List overlays',
+      description: 'List the repo, user, and project skill sources that feed the merged skill view.',
+      inputSchema: z.object({
+        project: z.boolean().optional(),
+        projectRoot: z.string().min(1).optional(),
+      }),
+    },
+    async (input = {}) => jsonContent({
+      client: context.client,
+      overlays: resolveOverlayInfo({
+        project: input.project,
+        projectRoot: input.projectRoot || process.cwd(),
+      }),
+    }),
+  );
+
+  server.registerTool(
+    'sync_overlays',
+    {
+      title: 'Sync overlays',
+      description: 'Materialize the merged skill view into the user or project overlay directory.',
+      inputSchema: z.object({
+        target: z.enum(['user', 'project']).optional(),
+        projectRoot: z.string().min(1).optional(),
+      }),
+    },
+    async (input = {}) => jsonContent({
+      client: context.client,
+      sync: installer.syncOverlaySources({
+        target: input.target || 'project',
+        projectRoot: input.projectRoot || process.cwd(),
+      }),
+    }),
   );
 
   server.registerTool(

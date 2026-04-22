@@ -13,6 +13,49 @@ function createTempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-test-'));
 }
 
+function writeSkill(dir, name, description) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, 'SKILL.md'),
+    `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n`,
+  );
+}
+
+function createOverlaySource(root = createTempHome()) {
+  const overlay = path.join(root, '.web-ui-skills', 'skills');
+
+  writeSkill(
+    path.join(overlay, 'preact-ui'),
+    'preact-ui',
+    'Use when working with the local overlay Preact skill.',
+  );
+  writeSkill(
+    path.join(overlay, 'private-ui'),
+    'private-ui',
+    'Use when working with private local UI patterns.',
+  );
+
+  fs.writeFileSync(
+    path.join(overlay, 'groups.json'),
+    JSON.stringify(
+      {
+        ui: {
+          description: 'Local UI overlays and private UI patterns.',
+          skills: ['preact-ui', 'private-ui'],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  return overlay;
+}
+
+function createProjectOverlaySource(projectRoot = createTempHome()) {
+  return createOverlaySource(projectRoot);
+}
+
 function runCli(args, env = {}, cwd = process.cwd()) {
   return execFileSync(process.execPath, [script, ...args], {
     encoding: 'utf8',
@@ -83,6 +126,22 @@ describe('discovery', () => {
     assert.ok(groups.ui);
     assert.deepEqual(groups.ui.skills, ['preact-ui', 'vue-ui', 'scss-system', 'storybook-ui']);
   });
+
+  test('merges user overlay sources on top of bundled skills', () => {
+    const overlay = createOverlaySource();
+    const sources = [installer.getSkillsSource(), overlay];
+
+    const detail = installer.getSkillDetail('preact-ui', sources);
+    const groups = installer.loadSkillGroups(sources);
+    const allSkills = installer.getAllSkillDetails(sources).map((skill) => skill.folder);
+
+    assert.ok(detail);
+    assert.equal(detail.description, 'Use when working with the local overlay Preact skill.');
+    assert.equal(detail.path, path.join(overlay, 'preact-ui'));
+    assert.equal(groups.ui.description, 'Local UI overlays and private UI patterns.');
+    assert.deepEqual(groups.ui.skills, ['preact-ui', 'private-ui']);
+    assert.ok(allSkills.includes('private-ui'));
+  });
 });
 
 describe('cli integration', () => {
@@ -133,6 +192,38 @@ describe('cli integration', () => {
     assert.ok(fs.existsSync(path.join(home, 'skills', 'vue-ui', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'scss-system', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'storybook-ui', 'SKILL.md')));
+  });
+
+  test('installs overlay skills from the user source when present', () => {
+    const home = createTempHome();
+    const overlay = createOverlaySource();
+    const env = {
+      CODEX_HOME: home,
+      WEB_UI_SKILLS_USER_SOURCE: overlay,
+    };
+
+    runCli(['--codex', '--group', 'ui'], env);
+
+    assert.ok(fs.existsSync(path.join(home, 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(home, 'skills', 'private-ui', 'SKILL.md')));
+    assert.match(
+      fs.readFileSync(path.join(home, 'skills', 'preact-ui', 'SKILL.md'), 'utf8'),
+      /local overlay Preact skill/,
+    );
+  });
+
+  test('installs project overlay skills from the current project when present', () => {
+    const projectRoot = createTempHome();
+    createProjectOverlaySource(projectRoot);
+
+    runCli(['--project', '--codex', '--group', 'ui'], {}, projectRoot);
+
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'private-ui', 'SKILL.md')));
+    assert.match(
+      fs.readFileSync(path.join(projectRoot, '.codex', 'skills', 'preact-ui', 'SKILL.md'), 'utf8'),
+      /local overlay Preact skill/,
+    );
   });
 
   test('installs skills into a project-local tool directory', () => {

@@ -99,6 +99,18 @@ npx web-ui-skills remove --all --everything # remove all installed skills from a
 npx web-ui-skills --help   # show help
 ```
 
+### Local skill overlay
+
+You can keep user-owned skill sources independent from the bundled repo under `~/.web-ui-skills/skills`.
+Project-local overlays live in `./.web-ui-skills/skills` inside the current project.
+Set `WEB_UI_SKILLS_USER_SOURCE` to point the user overlay at another directory.
+
+Source precedence is:
+
+`repo bundle -> user overlay -> project overlay`
+
+When the same skill or group exists in multiple places, the higher-precedence overlay wins.
+
 ### Update existing installation
 
 To update skills to the latest version:
@@ -220,10 +232,25 @@ A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](/
 
 It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_skills`, and `remove_skills`.
 It also exposes `get_skill_info`, `get_group_info`, and `list_skills_info` for inspecting skill and group metadata before installing anything.
+It also exposes `list_overlays` for checking the repo, user, and project overlay sources before merging or installing.
+It also exposes `sync_overlays` for writing the merged overlay view into the user or project overlay directory.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
 Pass `project: true` and `projectRoot` in MCP calls when you want the skills copied into the current project instead of global user folders.
 Use it from an MCP client by wiring the command through standard `stdio` and the JSON config above.
+
+MCP tools and what they do:
+
+- `search_skills` - find skills by folder name or frontmatter name.
+- `list_groups` - inspect curated groups and their included skills.
+- `list_overlays` - inspect repo, user, and project overlay sources and precedence.
+- `sync_overlays` - materialize the merged overlay view into the user or project overlay directory.
+- `get_skill_info` - inspect one skill with full metadata.
+- `get_group_info` - inspect one group with full skill metadata.
+- `list_skills_info` - list all skills with full metadata.
+- `install_skills` - install selected skills or groups to one or more tools.
+- `update_skills` - refresh installed skills for one or more tools.
+- `remove_skills` - remove selected skills, groups, or everything for a selected tool scope.
 
 ## CI/CD
 

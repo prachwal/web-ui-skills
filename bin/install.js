@@ -12,6 +12,7 @@ const runtime = {
 
 const SKILL_FILE = 'SKILL.md';
 const GROUPS_FILE = 'groups.json';
+const USER_SKILLS_HOME = '.web-ui-skills';
 const TOOL_FOLDER_NAMES = {
   codex: '.codex',
   claude: '.claude',
@@ -87,6 +88,22 @@ function getSkillsSource() {
   return path.join(__dirname, '..', 'skills');
 }
 
+function getUserSkillsSource() {
+  return process.env.WEB_UI_SKILLS_USER_SOURCE || path.join(os.homedir(), USER_SKILLS_HOME, 'skills');
+}
+
+function getProjectSkillsSource(projectRoot = process.cwd()) {
+  return path.join(projectRoot, USER_SKILLS_HOME, 'skills');
+}
+
+function getSkillsSources({ projectRoot = process.cwd() } = {}) {
+  return [getSkillsSource(), getUserSkillsSource(), getProjectSkillsSource(projectRoot)];
+}
+
+function normalizeSkillsSources(skillsSource = getSkillsSources()) {
+  return Array.isArray(skillsSource) ? skillsSource.filter(Boolean) : [skillsSource];
+}
+
 function getGroupsSource(skillsSource = getSkillsSource()) {
   return path.join(skillsSource, GROUPS_FILE);
 }
@@ -95,31 +112,43 @@ function hasSkillFile(dir) {
   return fs.existsSync(path.join(dir, SKILL_FILE));
 }
 
-function getTopLevelSkills(skillsSource = getSkillsSource()) {
-  if (!fs.existsSync(skillsSource)) return [];
+function getTopLevelSkills(skillsSource = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSource);
+  if (sources.length > 1) {
+    return getMergedTopLevelSkills(sources);
+  }
+
+  const source = sources[0];
+  if (!fs.existsSync(source)) return [];
 
   return fs
-    .readdirSync(skillsSource, { withFileTypes: true })
+    .readdirSync(source, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
-    .filter((skill) => hasSkillFile(path.join(skillsSource, skill)))
+    .filter((skill) => hasSkillFile(path.join(source, skill)))
     .sort();
 }
 
-function getSkillEntries(skillsSource = getSkillsSource()) {
-  return getTopLevelSkills(skillsSource).map((skill) => {
-    const skillFile = path.join(skillsSource, skill, SKILL_FILE);
+function getSkillEntries(skillsSource = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSource);
+  if (sources.length > 1) {
+    return getMergedSkillEntries(sources);
+  }
+
+  const source = sources[0];
+  return getTopLevelSkills(source).map((skill) => {
+    const skillFile = path.join(source, skill, SKILL_FILE);
     const metadata = readSkillMetadata(skillFile);
     return {
       dir: skill,
       name: metadata.name || skill,
       description: metadata.description || '',
-      path: path.join(skillsSource, skill),
+      path: path.join(source, skill),
     };
   });
 }
 
-function loadSkillGroups(skillsSource = getSkillsSource()) {
+function loadSkillGroupsFromSource(skillsSource = getSkillsSource()) {
   const groupsFile = getGroupsSource(skillsSource);
   if (!fs.existsSync(groupsFile)) return {};
 
@@ -138,7 +167,88 @@ function loadSkillGroups(skillsSource = getSkillsSource()) {
   return groups;
 }
 
-function getGroupEntries(skillsSource = getSkillsSource()) {
+function loadSkillGroups(skillsSource = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSource);
+  if (sources.length > 1) {
+    return loadMergedSkillGroups(sources);
+  }
+
+  return loadSkillGroupsFromSource(sources[0]);
+}
+
+function getMergedSkillEntries(skillsSources = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSources);
+  const merged = new Map();
+
+  for (const source of sources) {
+    if (!fs.existsSync(source)) continue;
+    for (const entry of getSkillEntries(source)) {
+      merged.set(entry.dir.toLowerCase(), entry);
+    }
+  }
+
+  return [...merged.values()].sort((a, b) => a.dir.localeCompare(b.dir));
+}
+
+function getMergedTopLevelSkills(skillsSources = getSkillsSources()) {
+  return getMergedSkillEntries(skillsSources).map((entry) => entry.dir);
+}
+
+function loadMergedSkillGroups(skillsSources = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSources);
+  const merged = {};
+
+  for (const source of sources) {
+    if (!fs.existsSync(source)) continue;
+    Object.assign(merged, loadSkillGroupsFromSource(source));
+  }
+
+  return merged;
+}
+
+function syncOverlaySources({
+  target = 'project',
+  projectRoot = process.cwd(),
+  skillsSources = getSkillsSources({ projectRoot }),
+} = {}) {
+  const sources = normalizeSkillsSources(skillsSources);
+  const mergedSkills = getMergedSkillEntries(sources);
+  const mergedGroups = loadMergedSkillGroups(sources);
+  const destinationRoot = target === 'user'
+    ? getUserSkillsSource()
+    : getProjectSkillsSource(projectRoot);
+
+  const stagingParent = fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-sync-'));
+  const stagingSkillsRoot = path.join(stagingParent, 'skills');
+  fs.mkdirSync(stagingSkillsRoot, { recursive: true });
+
+  for (const entry of mergedSkills) {
+    const dest = path.join(stagingSkillsRoot, entry.dir);
+    copyDir(entry.path, dest);
+  }
+
+  fs.writeFileSync(
+    path.join(stagingSkillsRoot, GROUPS_FILE),
+    `${JSON.stringify(mergedGroups, null, 2)}\n`,
+  );
+
+  fs.rmSync(destinationRoot, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(destinationRoot), { recursive: true });
+  fs.renameSync(stagingSkillsRoot, destinationRoot);
+  fs.rmSync(stagingParent, { recursive: true, force: true });
+
+  return {
+    target,
+    destinationRoot,
+    sourceRoots: sources,
+    skillCount: mergedSkills.length,
+    groupCount: Object.keys(mergedGroups).length,
+    skills: mergedSkills.map((entry) => entry.dir),
+    groups: Object.keys(mergedGroups).sort(),
+  };
+}
+
+function getGroupEntries(skillsSource = getSkillsSources()) {
   const groups = loadSkillGroups(skillsSource);
   return Object.entries(groups)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -185,7 +295,7 @@ function readSkillName(skillFile) {
   return readSkillMetadata(skillFile).name;
 }
 
-function getSkillDetail(skillName, skillsSource = getSkillsSource()) {
+function getSkillDetail(skillName, skillsSource = getSkillsSources()) {
   const entries = getSkillEntries(skillsSource);
   const target = skillName.toLowerCase();
   const entry = entries.find(
@@ -202,7 +312,7 @@ function getSkillDetail(skillName, skillsSource = getSkillsSource()) {
   };
 }
 
-function getAllSkillDetails(skillsSource = getSkillsSource()) {
+function getAllSkillDetails(skillsSource = getSkillsSources()) {
   return getSkillEntries(skillsSource).map((entry) => ({
     name: entry.name,
     folder: entry.dir,
@@ -211,26 +321,48 @@ function getAllSkillDetails(skillsSource = getSkillsSource()) {
   }));
 }
 
-function validateSkillTree(skillsSource = getSkillsSource()) {
-  const topLevelSkills = getTopLevelSkills(skillsSource);
+function validateSkillTree(skillsSource = getSkillsSources()) {
+  const sources = normalizeSkillsSources(skillsSource);
+  if (sources.length > 1) {
+    const combined = {
+      skills: [],
+      warnings: [],
+    };
+
+    for (const source of sources) {
+      const validated = validateSkillTree(source);
+      combined.skills.push(...validated.skills);
+      combined.warnings.push(
+        ...validated.warnings.map((warning) => `${source}: ${warning}`),
+      );
+    }
+
+    return {
+      skills: uniqueList(combined.skills).sort(),
+      warnings: combined.warnings,
+    };
+  }
+
+  const source = sources[0];
+  const topLevelSkills = getTopLevelSkills(source);
   const warnings = [];
 
   for (const skill of topLevelSkills) {
-    const skillFile = path.join(skillsSource, skill, SKILL_FILE);
+    const skillFile = path.join(source, skill, SKILL_FILE);
     const skillName = readSkillName(skillFile);
     if (!skillName) {
-      warnings.push(`Missing frontmatter name in ${path.relative(skillsSource, skillFile)}`);
+      warnings.push(`Missing frontmatter name in ${path.relative(source, skillFile)}`);
     } else if (skillName !== skill) {
       warnings.push(`Skill directory/name mismatch: ${skill} uses name "${skillName}"`);
     }
   }
 
   const names = new Map();
-  for (const skillFile of findSkillFiles(skillsSource)) {
+  for (const skillFile of findSkillFiles(source)) {
     const skillName = readSkillName(skillFile);
     if (!skillName) continue;
 
-    const relativePath = path.relative(skillsSource, skillFile);
+    const relativePath = path.relative(source, skillFile);
     const previous = names.get(skillName);
     if (previous) {
       warnings.push(`Duplicate skill name "${skillName}" in ${previous} and ${relativePath}`);
@@ -246,7 +378,7 @@ function uniqueList(items) {
   return [...new Set(items)];
 }
 
-function expandSelectedGroups(selectedGroups, skillsSource = getSkillsSource()) {
+function expandSelectedGroups(selectedGroups, skillsSource = getSkillsSources()) {
   if (!selectedGroups || selectedGroups.length === 0) return [];
 
   const groups = loadSkillGroups(skillsSource);
@@ -272,7 +404,7 @@ function expandSelectedGroups(selectedGroups, skillsSource = getSkillsSource()) 
   return uniqueList(resolved);
 }
 
-function filterSelectedSkills(skills, selectedSkills, skillsSource = getSkillsSource()) {
+function filterSelectedSkills(skills, selectedSkills, skillsSource = getSkillsSources()) {
   if (!selectedSkills || selectedSkills.length === 0) return skills;
 
   const entries = getSkillEntries(skillsSource);
@@ -301,7 +433,7 @@ function filterSelectedSkills(skills, selectedSkills, skillsSource = getSkillsSo
   return resolved;
 }
 
-function resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSource = getSkillsSource()) {
+function resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSource = getSkillsSources()) {
   const expandedGroups = expandSelectedGroups(selectedGroups, skillsSource);
   if (expandedGroups === null) return null;
 
@@ -309,12 +441,17 @@ function resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSo
   return filterSelectedSkills(skills, combined, skillsSource);
 }
 
-function installForTool(toolName, selectedSkills = null, selectedGroups = null, targetDirs = TOOLS) {
+function installForTool(
+  toolName,
+  selectedSkills = null,
+  selectedGroups = null,
+  targetDirs = TOOLS,
+  skillsSource = getSkillsSources(),
+) {
   const targetDir = targetDirs[toolName];
-  const skillsSource = getSkillsSource();
 
-  if (!fs.existsSync(skillsSource)) {
-    console.error(`✗ Skills source directory not found: ${skillsSource}`);
+  if (!fs.existsSync(getSkillsSource())) {
+    console.error(`✗ Skills source directory not found: ${getSkillsSource()}`);
     return false;
   }
 
@@ -333,9 +470,18 @@ function installForTool(toolName, selectedSkills = null, selectedGroups = null, 
 
   fs.mkdirSync(targetDir, { recursive: true });
 
+  const entriesByFolder = new Map(
+    getSkillEntries(skillsSource).map((entry) => [entry.dir.toLowerCase(), entry]),
+  );
   let installed = 0;
   for (const skill of skillsToInstall) {
-    const src = path.join(skillsSource, skill);
+    const entry = entriesByFolder.get(skill.toLowerCase());
+    if (!entry) {
+      console.error(`✗ Missing skill source for ${skill}`);
+      return false;
+    }
+
+    const src = entry.path;
     const dest = path.join(targetDir, skill);
     fs.rmSync(dest, { recursive: true, force: true });
     copyDir(src, dest);
@@ -350,7 +496,7 @@ function deleteForTool(
   toolName,
   selectedSkills,
   selectedGroups = null,
-  skillsSource = getSkillsSource(),
+  skillsSource = getSkillsSources(),
   targetDirs = TOOLS,
   deleteAll = false,
 ) {
@@ -402,7 +548,7 @@ function deleteForTool(
   return true;
 }
 
-function searchSkills(query, skillsSource = getSkillsSource()) {
+function searchSkills(query, skillsSource = getSkillsSources()) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return [];
 
@@ -414,7 +560,7 @@ function searchSkills(query, skillsSource = getSkillsSource()) {
   });
 }
 
-function listGroups(skillsSource = getSkillsSource()) {
+function listGroups(skillsSource = getSkillsSources()) {
   const groups = getGroupEntries(skillsSource);
 
   console.log('\nAvailable groups:\n');
@@ -593,6 +739,8 @@ Examples:
 
 function runCli(argv = process.argv.slice(2)) {
   const parsed = parseArgs(argv);
+  const sourceRoot = parsed.projectRoot || process.cwd();
+  const skillSources = getSkillsSources({ projectRoot: sourceRoot });
 
   if (parsed.help) {
     printHelp();
@@ -606,7 +754,7 @@ function runCli(argv = process.argv.slice(2)) {
 
   if (parsed.command === 'find' || parsed.search !== null) {
     const query = parsed.search ?? parsed.selectedSkills.join(' ');
-    const matches = searchSkills(query);
+    const matches = searchSkills(query, skillSources);
 
     console.log(`\nMatching skills for "${query}":\n`);
     if (matches.length === 0) {
@@ -619,7 +767,7 @@ function runCli(argv = process.argv.slice(2)) {
   }
 
   if (parsed.command === 'groups' || parsed.listGroups) {
-    listGroups();
+    listGroups(skillSources);
     return 0;
   }
 
@@ -632,7 +780,7 @@ function runCli(argv = process.argv.slice(2)) {
     : TOOLS;
 
   if (parsed.command === 'list' || parsed.list) {
-    const { skills, warnings } = validateSkillTree();
+    const { skills, warnings } = validateSkillTree(skillSources);
 
     console.log('\nAvailable skills:\n');
     skills.forEach((skill) => console.log(`  • ${skill}`));
@@ -668,8 +816,8 @@ function runCli(argv = process.argv.slice(2)) {
     console.log(`${action} ${tool} → ${targetDirs[tool]}`);
     if (parsed.deleteMode) {
       const deleteAll = parsed.all && parsed.wipeAll && parsed.selectedSkills.length === 0 && parsed.selectedGroups.length === 0;
-      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups, getSkillsSource(), targetDirs, deleteAll)) ok = false;
-    } else if (!installForTool(tool, parsed.selectedSkills, parsed.selectedGroups, targetDirs)) {
+      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups, skillSources, targetDirs, deleteAll)) ok = false;
+    } else if (!installForTool(tool, parsed.selectedSkills, parsed.selectedGroups, targetDirs, skillSources)) {
       ok = false;
     }
   }
@@ -693,7 +841,12 @@ module.exports = {
   getGroupEntries,
   getSkillEntries,
   getSkillsSource,
+  getSkillsSources,
   getTopLevelSkills,
+  getProjectSkillsSource,
+  getUserSkillsSource,
+  getMergedSkillEntries,
+  getMergedTopLevelSkills,
   installForTool,
   parseArgs,
   printHelp,
@@ -710,6 +863,9 @@ module.exports = {
   runCli,
   searchSkills,
   loadSkillGroups,
+  loadSkillGroupsFromSource,
+  loadMergedSkillGroups,
+  syncOverlaySources,
   validateSkillTree,
   __test__: runtime,
 };

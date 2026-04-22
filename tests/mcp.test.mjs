@@ -4,10 +4,51 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, test } from 'node:test';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { createServer } from '../bin/mcp.mjs';
 
 function createTempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-mcp-test-'));
+}
+
+function writeSkill(dir, name, description) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, 'SKILL.md'),
+    `---\nname: ${name}\ndescription: ${description}\n---\n\n# ${name}\n`,
+  );
+}
+
+function createOverlaySource(root = createTempHome()) {
+  const overlay = path.join(root, '.web-ui-skills', 'skills');
+
+  writeSkill(
+    path.join(overlay, 'preact-ui'),
+    'preact-ui',
+    'Use when working with the local overlay Preact skill.',
+  );
+  writeSkill(
+    path.join(overlay, 'private-ui'),
+    'private-ui',
+    'Use when working with private local UI patterns.',
+  );
+
+  fs.writeFileSync(
+    path.join(overlay, 'groups.json'),
+    JSON.stringify(
+      {
+        ui: {
+          description: 'Local UI overlays and private UI patterns.',
+          skills: ['preact-ui', 'private-ui'],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  return overlay;
 }
 
 function runInlineModule(code, env = {}) {
@@ -99,6 +140,155 @@ describe('prompts', () => {
     assert.ok(server._registeredPrompts['install-group-plan']);
     assert.ok(server._registeredPrompts['update-skills-plan']);
     assert.ok(server._registeredPrompts['remove-skills-plan']);
+  });
+});
+
+describe('overlay tools', () => {
+  test('lists repo, user, and project overlay sources', async () => {
+    const server = createServer();
+    const projectRoot = createTempHome();
+    const projectOverlay = path.join(projectRoot, '.web-ui-skills', 'skills');
+    fs.mkdirSync(projectOverlay, { recursive: true });
+    fs.writeFileSync(
+      path.join(projectOverlay, 'groups.json'),
+      JSON.stringify(
+        {
+          ui: {
+            description: 'Project overlay UI group.',
+            skills: ['preact-ui'],
+          },
+        },
+        null,
+        2,
+      ),
+    );
+
+    const result = await server._registeredTools.list_overlays.handler({
+      project: true,
+      projectRoot,
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.overlays.project, true);
+    assert.equal(payload.overlays.projectRoot, projectRoot);
+    assert.equal(payload.overlays.sources.length, 3);
+    assert.deepEqual(payload.overlays.precedence, ['repo', 'user', 'project']);
+    assert.ok(payload.overlays.sources.some((source) => source.scope === 'repo' && source.exists));
+    assert.ok(payload.overlays.sources.some((source) => source.scope === 'project' && source.exists));
+    assert.ok(payload.overlays.merged.skills.includes('preact-ui'));
+  });
+
+  test('syncs merged overlays into the project overlay directory', async () => {
+    const originalUserSource = process.env.WEB_UI_SKILLS_USER_SOURCE;
+    const userOverlayRoot = createOverlaySource();
+    const projectRoot = createTempHome();
+    const server = createServer();
+
+    process.env.WEB_UI_SKILLS_USER_SOURCE = userOverlayRoot;
+
+    try {
+      const result = await server._registeredTools.sync_overlays.handler({
+        target: 'project',
+        projectRoot,
+      });
+      const payload = JSON.parse(result.content[0].text);
+
+      assert.equal(payload.sync.target, 'project');
+      assert.ok(fs.existsSync(path.join(projectRoot, '.web-ui-skills', 'skills', 'private-ui', 'SKILL.md')));
+      assert.match(
+        fs.readFileSync(path.join(projectRoot, '.web-ui-skills', 'skills', 'preact-ui', 'SKILL.md'), 'utf8'),
+        /local overlay Preact skill/,
+      );
+    } finally {
+      if (originalUserSource === undefined) {
+        delete process.env.WEB_UI_SKILLS_USER_SOURCE;
+      } else {
+        process.env.WEB_UI_SKILLS_USER_SOURCE = originalUserSource;
+      }
+    }
+  });
+});
+
+describe('stdio e2e', () => {
+  test('supports tools, prompts, resources, and tool calls over stdio', async () => {
+    const projectRoot = createTempHome();
+    const userOverlay = createOverlaySource();
+    const script = new URL('../bin/mcp.mjs', import.meta.url);
+
+    const client = new Client({
+      name: 'web-ui-skills-test-client',
+      version: '1.0.0',
+    });
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [script.pathname],
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        CODEX_HOME: createTempHome(),
+        WEB_UI_SKILLS_CLIENT: 'codex',
+        WEB_UI_SKILLS_USER_SOURCE: userOverlay,
+      },
+    });
+
+    try {
+      await client.connect(transport);
+
+      const tools = await client.listTools();
+      const toolNames = tools.tools.map((tool) => tool.name);
+      assert.ok(toolNames.includes('search_skills'));
+      assert.ok(toolNames.includes('list_overlays'));
+      assert.ok(toolNames.includes('sync_overlays'));
+
+      const prompts = await client.listPrompts();
+      assert.ok(prompts.prompts.some((prompt) => prompt.name === 'how-to-use-web-ui-skills'));
+      assert.ok(prompts.prompts.some((prompt) => prompt.name === 'install-group-plan'));
+
+      const resources = await client.listResources();
+      assert.ok(resources.resources.some((resource) => resource.uri === 'web-ui-skills://guide'));
+
+      const guide = await client.readResource({ uri: 'web-ui-skills://guide' });
+      assert.match(guide.contents[0].text, /Use list_overlays to inspect repo, user, and project sources and precedence/);
+
+      const overlayResult = await client.callTool({
+        name: 'list_overlays',
+        arguments: { project: true, projectRoot },
+      });
+      const overlayPayload = JSON.parse(overlayResult.content[0].text);
+      assert.equal(overlayPayload.overlays.project, true);
+      assert.ok(overlayPayload.overlays.merged.skills.includes('private-ui'));
+
+      const skillInfo = await client.callTool({
+        name: 'get_skill_info',
+        arguments: { name: 'preact-ui' },
+      });
+      const skillPayload = JSON.parse(skillInfo.content[0].text);
+      assert.equal(skillPayload.skill.name, 'preact-ui');
+
+      const groupInfo = await client.callTool({
+        name: 'get_group_info',
+        arguments: { name: 'ui' },
+      });
+      const groupPayload = JSON.parse(groupInfo.content[0].text);
+      assert.equal(groupPayload.group.name, 'ui');
+
+      const listSkills = await client.callTool({
+        name: 'list_skills_info',
+        arguments: {},
+      });
+      const listSkillsPayload = JSON.parse(listSkills.content[0].text);
+      assert.ok(listSkillsPayload.skills.some((skill) => skill.name === 'preact-ui'));
+
+      const syncResult = await client.callTool({
+        name: 'sync_overlays',
+        arguments: { target: 'project', projectRoot },
+      });
+      const syncPayload = JSON.parse(syncResult.content[0].text);
+      assert.equal(syncPayload.sync.target, 'project');
+      assert.ok(fs.existsSync(path.join(projectRoot, '.web-ui-skills', 'skills', 'private-ui', 'SKILL.md')));
+    } finally {
+      await transport.close().catch(() => {});
+    }
   });
 });
 
