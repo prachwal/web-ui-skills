@@ -85,6 +85,30 @@ describe('cli integration', () => {
     assert.ok(!fs.existsSync(path.join(home, 'skills', 'vue-ui')));
   });
 
+  test('removes all installed skills from all tool directories when explicitly requested', () => {
+    const home = createTempHome();
+    const env = {
+      CODEX_HOME: path.join(home, 'codex'),
+      CLAUDE_HOME: path.join(home, 'claude'),
+      COPILOT_HOME: path.join(home, 'copilot'),
+      KILOCODE_HOME: path.join(home, 'kilo'),
+    };
+
+    runCli(['--codex', '--claude', '--copilot', '--kilo', 'preact-ui', 'vue-ui'], env);
+
+    assert.ok(fs.existsSync(path.join(env.CODEX_HOME, 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(env.CLAUDE_HOME, 'skills', 'vue-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(env.COPILOT_HOME, 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(env.KILOCODE_HOME, 'skills', 'vue-ui', 'SKILL.md')));
+
+    runCli(['remove', '--all', '--everything'], env);
+
+    assert.ok(!fs.existsSync(path.join(env.CODEX_HOME, 'skills', 'preact-ui')));
+    assert.ok(!fs.existsSync(path.join(env.CLAUDE_HOME, 'skills', 'vue-ui')));
+    assert.ok(!fs.existsSync(path.join(env.COPILOT_HOME, 'skills', 'preact-ui')));
+    assert.ok(!fs.existsSync(path.join(env.KILOCODE_HOME, 'skills', 'vue-ui')));
+  });
+
   test('installs a predefined group via --group', () => {
     const home = createTempHome();
 
@@ -110,5 +134,17 @@ describe('safety', () => {
     assert.throws(() => {
       runCli(['remove', 'vue-ui']);
     }, /Use at least one tool flag/);
+  });
+
+  test('remove --all without everything is rejected', () => {
+    assert.throws(() => {
+      runCli(['remove', '--all']);
+    }, /Remove all tool scopes requires at least one skill\/group name or --everything/);
+  });
+
+  test('rejects unknown flags', () => {
+    assert.throws(() => {
+      runCli(['--mystery']);
+    }, /Unknown option\(s\): --mystery/);
   });
 });

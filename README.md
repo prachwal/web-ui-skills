@@ -76,6 +76,8 @@ npx web-ui-skills find ui   # search skills by folder or frontmatter name
 npx web-ui-skills preact-ui vue-ui   # install only selected skills
 npx web-ui-skills group ui   # install a predefined group of skills
 npx web-ui-skills remove vue-ui    # remove selected skills from the target tool dir
+npx web-ui-skills remove --all vue-ui    # remove vue-ui from all tool dirs
+npx web-ui-skills remove --all --everything # remove all installed skills from all tool dirs
 npx web-ui-skills --help   # show help
 ```
 

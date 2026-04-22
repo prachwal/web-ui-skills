@@ -269,10 +269,32 @@ function installForTool(toolName, selectedSkills = null, selectedGroups = null) 
   return true;
 }
 
-function deleteForTool(toolName, selectedSkills, selectedGroups = null, skillsSource = getSkillsSource()) {
+function deleteForTool(
+  toolName,
+  selectedSkills,
+  selectedGroups = null,
+  skillsSource = getSkillsSource(),
+  deleteAll = false,
+) {
   const targetDir = TOOLS[toolName];
   const skills = getTopLevelSkills(skillsSource);
   const skillsToDelete = resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSource);
+
+  if (deleteAll) {
+    if (!fs.existsSync(targetDir)) {
+      console.log(`ℹ Nothing to delete in ${targetDir}`);
+      return true;
+    }
+
+    const installedEntries = fs.readdirSync(targetDir, { withFileTypes: true });
+    const deleted = installedEntries.length;
+    fs.rmSync(targetDir, { recursive: true, force: true });
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    console.log(`  - removed ${deleted} item(s)`);
+    console.log(`✓ Deleted all skill(s) from ${targetDir}`);
+    return true;
+  }
 
   if ((!selectedSkills || selectedSkills.length === 0) && (!selectedGroups || selectedGroups.length === 0)) {
     console.error('✗ Provide at least one skill or group name after --delete');
@@ -330,6 +352,7 @@ function parseArgs(argv) {
   const state = {
     command: 'install',
     all: false,
+    wipeAll: false,
     help: false,
     list: false,
     listGroups: false,
@@ -338,6 +361,7 @@ function parseArgs(argv) {
     selectedSkills: [],
     selectedGroups: [],
     requestedTools: [],
+    unknownOptions: [],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -373,6 +397,8 @@ function parseArgs(argv) {
       state.deleteMode = true;
     } else if (arg === '--all') {
       state.all = true;
+    } else if (arg === '--everything') {
+      state.wipeAll = true;
     } else if (arg === '--group' || arg === '--group=') {
       const next = argv[i + 1];
       if (next && !next.startsWith('--')) {
@@ -391,6 +417,8 @@ function parseArgs(argv) {
       const tool = arg.slice(2);
       if (Object.prototype.hasOwnProperty.call(TOOLS, tool)) {
         state.requestedTools.push(tool);
+      } else {
+        state.unknownOptions.push(arg);
       }
     } else {
       if (state.command === 'group' || state.command === 'groups') {
@@ -419,6 +447,7 @@ Options:
   --groups     List available groups and exit
   --search Q   Search available skills by folder or skill name
   --delete     Remove selected skills from the target tool directory
+  --everything Remove every installed skill from the selected tool directories
   -h, --help   Show this help message
 
 Commands:
@@ -447,6 +476,7 @@ Examples:
   npx web-ui-skills find ui          # search matching skills
   npx web-ui-skills --codex remove vue-ui    # remove a skill from a specific tool dir
   npx web-ui-skills remove --all vue-ui      # remove a skill from all tool dirs
+  npx web-ui-skills remove --all --everything # remove all installed skills from all tool dirs
 `);
 }
 
@@ -456,6 +486,11 @@ function runCli(argv = process.argv.slice(2)) {
   if (parsed.help) {
     printHelp();
     return 0;
+  }
+
+  if (parsed.unknownOptions.length > 0) {
+    console.error(`✗ Unknown option(s): ${parsed.unknownOptions.join(', ')}`);
+    return 1;
   }
 
   if (parsed.command === 'find' || parsed.search !== null) {
@@ -502,13 +537,19 @@ function runCli(argv = process.argv.slice(2)) {
     return 1;
   }
 
+  if (parsed.deleteMode && parsed.all && parsed.selectedSkills.length === 0 && parsed.selectedGroups.length === 0 && !parsed.wipeAll) {
+    console.error('✗ Remove all tool scopes requires at least one skill/group name or --everything for a full wipe');
+    return 1;
+  }
+
   console.log('\n🚀 web-ui-skills installer\n');
   let ok = true;
   for (const tool of targetTools) {
     const action = parsed.deleteMode ? 'Deleting from' : 'Installing for';
     console.log(`${action} ${tool} → ${TOOLS[tool]}`);
     if (parsed.deleteMode) {
-      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups)) ok = false;
+      const deleteAll = parsed.all && parsed.wipeAll && parsed.selectedSkills.length === 0 && parsed.selectedGroups.length === 0;
+      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups, getSkillsSource(), deleteAll)) ok = false;
     } else if (!installForTool(tool, parsed.selectedSkills, parsed.selectedGroups)) {
       ok = false;
     }
