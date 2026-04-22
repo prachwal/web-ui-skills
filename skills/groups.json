@@ -5,7 +5,9 @@
       "typescript-fundamentals",
       "eslint-config",
       "project-tooling",
-      "docs-instructions"
+      "docs-instructions",
+      "vite-config",
+      "release-docs"
     ]
   },
   "ui": {
@@ -13,6 +15,7 @@
     "skills": [
       "preact-ui",
       "vue-ui",
+      "vue-router",
       "scss-system",
       "storybook-ui"
     ]
@@ -22,7 +25,9 @@
     "skills": [
       "web-accessibility-standards",
       "a11y-review",
+      "frontend-a11y",
       "web-testing",
+      "vitest-vue-testing",
       "web-design-review"
     ]
   },

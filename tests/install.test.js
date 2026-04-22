@@ -8,6 +8,7 @@ const { describe, test } = require('node:test');
 const installer = require('../bin/install.js');
 
 const script = path.resolve(__dirname, '../bin/install.js');
+process.env.WEB_UI_SKILLS_USER_SOURCE = path.join(os.tmpdir(), 'web-ui-skills-test-empty-user-source');
 
 function createTempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-test-'));
@@ -124,7 +125,7 @@ describe('discovery', () => {
     const groups = installer.loadSkillGroups();
 
     assert.ok(groups.ui);
-    assert.deepEqual(groups.ui.skills, ['preact-ui', 'vue-ui', 'scss-system', 'storybook-ui']);
+    assert.deepEqual(groups.ui.skills, ['preact-ui', 'vue-ui', 'vue-router', 'scss-system', 'storybook-ui']);
   });
 
   test('merges user overlay sources on top of bundled skills', () => {
@@ -190,6 +191,7 @@ describe('cli integration', () => {
 
     assert.ok(fs.existsSync(path.join(home, 'skills', 'preact-ui', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'vue-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(home, 'skills', 'vue-router', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'scss-system', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'storybook-ui', 'SKILL.md')));
   });

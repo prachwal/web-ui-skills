@@ -20,11 +20,14 @@ This repository bundles Codex skills for building professional web applications.
 - `eslint-config` - ESLint configuration for TypeScript projects, including flat config, Preact/React, Node.js, Netlify Functions, and monorepos.
 - `project-tooling` - Vite, Vitest, TypeScript, ESLint, package scripts, path aliases, and build/test tooling.
 - `docs-instructions` - repository Markdown, Copilot instructions, Codex AGENTS.md, repo skills, prompts, and LLM eval tasks.
+- `vite-config` - Vite configuration, aliases, env handling, dev proxying, build output, and TypeScript globals.
+- `release-docs` - release notes, README updates, changelogs, deployment instructions, environment documentation, and repo maintenance docs.
 
 ### UI
 
 - `preact-ui` - Preact pages and components, MVVM architecture, signals, hooks, forms, routing, data fetching, accessibility, SCSS integration, and tests.
 - `vue-ui` - Vue 3 applications and components, Composition API, SFC structure, Pinia state, Vue Router, Vue I18n, Vite, Vitest, Vue Test Utils, accessibility, and production app architecture.
+- `vue-router` - Vue Router routes, route names, navigation, guards, lazy-loaded pages, scroll behavior, and route-level accessibility.
 - `scss-system` - SCSS-based design systems, component libraries, tokens, mixins, functions, color palettes, typography, spacing, responsiveness, theming, and folder architecture.
 - `storybook-ui` - Storybook setup, CSF stories, interaction tests, Vitest addon, accessibility, visual testing, and component documentation workflows.
 - `frontend-ui` - React TSX pages and components, Tailwind v4 styling, accessibility, and Testing Library coverage.
@@ -33,7 +36,9 @@ This repository bundles Codex skills for building professional web applications.
 
 - `web-accessibility-standards` - accessible web interfaces, semantic HTML, ARIA, keyboard support, responsive mobile-first layouts, focus management, dynamic content, and automated accessibility checks.
 - `a11y-review` - accessibility reviews for WCAG mapping, ARIA misuse, keyboard access, focus management, responsive/mobile behavior, and QA findings.
+- `frontend-a11y` - frontend accessibility implementation, semantic HTML, keyboard flow, focus management, ARIA, forms, contrast, motion, and responsive behavior.
 - `web-testing` - web UI test strategy, Playwright end-to-end tests, regression coverage, stable locators, visual comparisons, browser compatibility, progressive enhancement, and CI reporting.
+- `vitest-vue-testing` - Vue 3 and TypeScript tests with Vitest, Vue Test Utils, jsdom, snapshots, mocks, router behavior, and coverage.
 - `web-design-review` - visual design implementation against design specs, including spacing, typography, color, responsive behavior, component consistency, dark mode, and token alignment.
 
 ### Frontend Product
@@ -228,7 +233,7 @@ Project-local install through MCP uses tool arguments, not the client config:
 
 That writes into `./.codex/skills` inside the project instead of `~/.codex/skills`.
 
-A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/codex-mcp-config.json), and a generic template is available at [examples/mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/mcp-config.json).
+A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](examples/codex-mcp-config.json), and a generic template is available at [examples/mcp-config.json](examples/mcp-config.json).
 
 It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_skills`, and `remove_skills`.
 It also exposes `get_skill_info`, `get_group_info`, and `list_skills_info` for inspecting skill and group metadata before installing anything.
@@ -288,7 +293,7 @@ Run `npx web-ui-skills --list` to inspect the bundle without installing anything
 
 - `web-accessibility-standards` covers implementation work.
 - `a11y-review` covers audits and QA.
-- `preact-ui`, `vue-ui`, `scss-system`, and `storybook-ui` cover component architecture, styling, and UI documentation.
+- `preact-ui`, `vue-ui`, `vue-router`, `scss-system`, and `storybook-ui` cover component architecture, routing, styling, and UI documentation.
 - `web-performance`, `web-i18n`, `web-testing`, `web-security`, `web-seo-metadata`, `web-forms`, `web-data-fetching`, `web-observability`, and `web-deployment` cover production frontend concerns.
 - `web-auth-ux`, `web-privacy`, `web-content`, `web-pwa`, and `web-design-review` cover specialized product and compliance workflows.
 - `netlify-serverless`, the Netlify API skills, `mongodb-netlify`, and `neon-netlify` cover backend, database, and operational concerns.

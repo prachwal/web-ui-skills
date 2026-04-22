@@ -8,6 +8,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { createServer } from '../bin/mcp.mjs';
 
+process.env.WEB_UI_SKILLS_USER_SOURCE = path.join(os.tmpdir(), 'web-ui-skills-test-empty-user-source');
+
 function createTempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-mcp-test-'));
 }
@@ -366,10 +368,10 @@ describe('skill info tools', () => {
 
     assert.equal(payload.group.name, 'ui');
     assert.equal(payload.group.description, 'UI framework, component, and styling workflows.');
-    assert.equal(payload.group.skills.length, 4);
+    assert.equal(payload.group.skills.length, 5);
     assert.deepEqual(
       payload.group.skills.map((skill) => skill.name),
-      ['preact-ui', 'vue-ui', 'scss-system', 'storybook-ui'],
+      ['preact-ui', 'vue-ui', 'vue-router', 'scss-system', 'storybook-ui'],
     );
     assert.ok(payload.group.skills.every((skill) => typeof skill.path === 'string' && skill.path.endsWith(skill.folder)));
   });
