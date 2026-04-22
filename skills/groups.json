@@ -1,0 +1,60 @@
+{
+  "foundation": {
+    "description": "Core TypeScript and tooling guidance.",
+    "skills": [
+      "typescript-fundamentals",
+      "eslint-config",
+      "project-tooling",
+      "docs-instructions"
+    ]
+  },
+  "ui": {
+    "description": "UI framework, component, and styling workflows.",
+    "skills": [
+      "preact-ui",
+      "vue-ui",
+      "scss-system",
+      "storybook-ui"
+    ]
+  },
+  "quality": {
+    "description": "Testing, accessibility, and design review workflows.",
+    "skills": [
+      "web-accessibility-standards",
+      "a11y-review",
+      "web-testing",
+      "web-design-review"
+    ]
+  },
+  "frontend-product": {
+    "description": "Production frontend concerns and content-heavy flows.",
+    "skills": [
+      "web-performance",
+      "web-i18n",
+      "web-security",
+      "web-seo-metadata",
+      "web-forms",
+      "web-data-fetching",
+      "web-observability",
+      "web-deployment",
+      "web-auth-ux",
+      "web-privacy",
+      "web-content",
+      "web-pwa"
+    ]
+  },
+  "platform": {
+    "description": "Serverless, deployment, database, and endpoint workflows.",
+    "skills": [
+      "netlify-serverless",
+      "netlify-typescript-api",
+      "netlify-database-security",
+      "netlify-api-performance",
+      "netlify-cli",
+      "mongodb-netlify",
+      "neon-netlify",
+      "vercel-deploy",
+      "vercel-endpoints"
+    ]
+  }
+}

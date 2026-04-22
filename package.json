@@ -7,7 +7,8 @@
     "url": "https://github.com/prachwal/web-ui-skills"
   },
   "bin": {
-    "web-ui-skills": "./bin/install.js"
+    "web-ui-skills": "./bin/install.js",
+    "web-ui-skills-mcp": "./bin/mcp.mjs"
   },
   "files": [
     "bin",
@@ -19,6 +20,8 @@
   "scripts": {
     "install-skills": "node bin/install.js",
     "list-skills": "node bin/install.js --list",
+    "mcp": "node bin/mcp.mjs",
+    "test": "node --test",
     "check-md-refs": "node scripts/check-md-refs.js .",
     "lint:md": "markdownlint --dot '**/*.md'",
     "lint:md:fix": "markdownlint --dot '**/*.md' --fix"
@@ -55,6 +58,10 @@
     "netlify"
   ],
   "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.0",
+    "zod": "^4.0.0"
+  },
   "devDependencies": {
     "markdownlint-cli": "^0.48.0"
   },
