@@ -327,6 +327,7 @@ function createServer(options = {}) {
             '- Use list_groups to inspect curated skill bundles before installing.',
             '- Use list_overlays to inspect repo, user, and project sources and precedence.',
             '- Use sync_overlays to materialize the merged skill view into the user or project overlay directory.',
+            '- Use promote_skill to copy one skill from the project overlay into the user overlay.',
             '- Use get_skill_info to inspect one skill, get_group_info to inspect one group with skill metadata, and list_skills_info to inspect all skills.',
             '- Use install_skills to install one or more skills or groups.',
             '- Use update_skills to refresh installed skills for selected tools.',
@@ -414,6 +415,25 @@ function createServer(options = {}) {
       client: context.client,
       sync: installer.syncOverlaySources({
         target: input.target || 'project',
+        projectRoot: input.projectRoot || process.cwd(),
+      }),
+    }),
+  );
+
+  server.registerTool(
+    'promote_skill',
+    {
+      title: 'Promote skill',
+      description: 'Promote one skill from the project overlay into the user overlay directory.',
+      inputSchema: z.object({
+        name: z.string().min(1),
+        projectRoot: z.string().min(1).optional(),
+      }),
+    },
+    async (input = {}) => jsonContent({
+      client: context.client,
+      promote: installer.promoteOverlaySkill({
+        name: input.name,
         projectRoot: input.projectRoot || process.cwd(),
       }),
     }),

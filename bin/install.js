@@ -248,6 +248,49 @@ function syncOverlaySources({
   };
 }
 
+function promoteOverlaySkill({
+  name,
+  projectRoot = process.cwd(),
+  target = 'user',
+} = {}) {
+  if (!name || typeof name !== 'string') {
+    return {
+      ok: false,
+      error: 'Provide a skill name to promote.',
+    };
+  }
+
+  if (target !== 'user') {
+    return {
+      ok: false,
+      error: 'Promote currently supports only target=user.',
+    };
+  }
+
+  const sourceRoot = path.join(getProjectSkillsSource(projectRoot), name);
+  const destinationRoot = path.join(getUserSkillsSource(), name);
+
+  if (!fs.existsSync(sourceRoot)) {
+    return {
+      ok: false,
+      error: `Skill not found in project overlay: ${name}`,
+      sourceRoot,
+      destinationRoot,
+    };
+  }
+
+  fs.rmSync(destinationRoot, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(destinationRoot), { recursive: true });
+  copyDir(sourceRoot, destinationRoot);
+
+  return {
+    ok: true,
+    name,
+    sourceRoot,
+    destinationRoot,
+  };
+}
+
 function getGroupEntries(skillsSource = getSkillsSources()) {
   const groups = loadSkillGroups(skillsSource);
   return Object.entries(groups)
@@ -865,6 +908,7 @@ module.exports = {
   loadSkillGroups,
   loadSkillGroupsFromSource,
   loadMergedSkillGroups,
+  promoteOverlaySkill,
   syncOverlaySources,
   validateSkillTree,
   __test__: runtime,

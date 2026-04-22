@@ -144,6 +144,19 @@ describe('prompts', () => {
 });
 
 describe('overlay tools', () => {
+  test('uses consistent snake_case MCP tool names', () => {
+    const server = createServer();
+    const toolNames = Object.keys(server._registeredTools).sort();
+
+    assert.ok(toolNames.every((name) => /^[a-z]+(?:_[a-z]+)*$/.test(name)));
+    assert.ok(toolNames.includes('list_overlays'));
+    assert.ok(toolNames.includes('sync_overlays'));
+    assert.ok(toolNames.includes('promote_skill'));
+    assert.ok(toolNames.includes('get_skill_info'));
+    assert.ok(toolNames.includes('get_group_info'));
+    assert.ok(toolNames.includes('list_skills_info'));
+  });
+
   test('lists repo, user, and project overlay sources', async () => {
     const server = createServer();
     const projectRoot = createTempHome();
@@ -207,6 +220,39 @@ describe('overlay tools', () => {
       }
     }
   });
+
+  test('promotes a single project-local skill into the user overlay directory', async () => {
+    const originalUserSource = process.env.WEB_UI_SKILLS_USER_SOURCE;
+    const userOverlayRoot = createTempHome();
+    const projectRoot = createTempHome();
+    const projectOverlay = path.join(projectRoot, '.web-ui-skills', 'skills');
+    fs.mkdirSync(projectOverlay, { recursive: true });
+    fs.mkdirSync(path.join(projectOverlay, 'private-ui'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectOverlay, 'private-ui', 'SKILL.md'),
+      '---\nname: private-ui\ndescription: Private project skill.\n---\n\n# private-ui\n',
+    );
+    const server = createServer();
+
+    process.env.WEB_UI_SKILLS_USER_SOURCE = path.join(userOverlayRoot, '.web-ui-skills', 'skills');
+
+    try {
+      const result = await server._registeredTools.promote_skill.handler({
+        name: 'private-ui',
+        projectRoot,
+      });
+      const payload = JSON.parse(result.content[0].text);
+
+      assert.equal(payload.promote.ok, true);
+      assert.ok(fs.existsSync(path.join(userOverlayRoot, '.web-ui-skills', 'skills', 'private-ui', 'SKILL.md')));
+    } finally {
+      if (originalUserSource === undefined) {
+        delete process.env.WEB_UI_SKILLS_USER_SOURCE;
+      } else {
+        process.env.WEB_UI_SKILLS_USER_SOURCE = originalUserSource;
+      }
+    }
+  });
 });
 
 describe('stdio e2e', () => {
@@ -239,6 +285,7 @@ describe('stdio e2e', () => {
       assert.ok(toolNames.includes('search_skills'));
       assert.ok(toolNames.includes('list_overlays'));
       assert.ok(toolNames.includes('sync_overlays'));
+      assert.ok(toolNames.includes('promote_skill'));
 
       const prompts = await client.listPrompts();
       assert.ok(prompts.prompts.some((prompt) => prompt.name === 'how-to-use-web-ui-skills'));
@@ -286,6 +333,14 @@ describe('stdio e2e', () => {
       const syncPayload = JSON.parse(syncResult.content[0].text);
       assert.equal(syncPayload.sync.target, 'project');
       assert.ok(fs.existsSync(path.join(projectRoot, '.web-ui-skills', 'skills', 'private-ui', 'SKILL.md')));
+
+      const promoteResult = await client.callTool({
+        name: 'promote_skill',
+        arguments: { name: 'private-ui', projectRoot },
+      });
+      const promotePayload = JSON.parse(promoteResult.content[0].text);
+      assert.equal(promotePayload.promote.ok, true);
+      assert.ok(fs.existsSync(path.join(userOverlay, 'private-ui', 'SKILL.md')));
     } finally {
       await transport.close().catch(() => {});
     }

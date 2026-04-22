@@ -234,6 +234,7 @@ It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_s
 It also exposes `get_skill_info`, `get_group_info`, and `list_skills_info` for inspecting skill and group metadata before installing anything.
 It also exposes `list_overlays` for checking the repo, user, and project overlay sources before merging or installing.
 It also exposes `sync_overlays` for writing the merged overlay view into the user or project overlay directory.
+It also exposes `promote_skill` for copying one project-local skill into the user overlay directory.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
 Pass `project: true` and `projectRoot` in MCP calls when you want the skills copied into the current project instead of global user folders.
@@ -245,6 +246,7 @@ MCP tools and what they do:
 - `list_groups` - inspect curated groups and their included skills.
 - `list_overlays` - inspect repo, user, and project overlay sources and precedence.
 - `sync_overlays` - materialize the merged overlay view into the user or project overlay directory.
+- `promote_skill` - copy one project-local skill into the user overlay directory.
 - `get_skill_info` - inspect one skill with full metadata.
 - `get_group_info` - inspect one group with full skill metadata.
 - `list_skills_info` - list all skills with full metadata.
