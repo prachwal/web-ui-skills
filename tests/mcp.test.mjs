@@ -43,6 +43,29 @@ describe('installer', () => {
     assert.ok(fs.existsSync(path.join(home, 'skills', 'preact-ui', 'SKILL.md')));
     assert.ok(fs.existsSync(path.join(home, 'skills', 'vue-ui', 'SKILL.md')));
   });
+
+  test('installs a predefined group into a project-local tool scope', () => {
+    const projectRoot = createTempHome();
+    const moduleUrl = mcpFileUrl();
+
+    const installOutput = runInlineModule(
+      `
+        import { installOrUpdate } from ${JSON.stringify(moduleUrl)};
+        const result = installOrUpdate({
+          mode: 'install',
+          tools: ['codex'],
+          groups: ['ui'],
+          project: true,
+          projectRoot: ${JSON.stringify(projectRoot)},
+        });
+        console.log(result.content[0].text);
+      `,
+    );
+
+    assert.match(installOutput, /"project": true/);
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'vue-ui', 'SKILL.md')));
+  });
 });
 
 describe('client context', () => {

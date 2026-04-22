@@ -7,8 +7,7 @@
     "url": "https://github.com/prachwal/web-ui-skills"
   },
   "bin": {
-    "web-ui-skills": "./bin/install.js",
-    "web-ui-skills-mcp": "./bin/mcp.mjs"
+    "web-ui-skills": "./bin/install.js"
   },
   "files": [
     "bin",

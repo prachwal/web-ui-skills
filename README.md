@@ -65,6 +65,7 @@ npx web-ui-skills --copilot    # ~/.copilot/skills
 npx web-ui-skills --kilo       # ~/.kilocode/skills
 
 npx web-ui-skills --codex --claude   # multiple tools at once
+npx web-ui-skills --project --codex preact-ui   # ./.codex/skills in the current project
 ```
 
 Additional options:
@@ -146,19 +147,21 @@ npm run mcp
 If you want to run the published CLI directly:
 
 ```bash
-npx web-ui-skills-mcp
+npx web-ui-skills mcp
 ```
 
 #### Client setup
 
-Register the server in your MCP client using `stdio`:
+Register the server in your MCP client using a JSON `mcpServers` block over `stdio`.
+
+Global Codex setup:
 
 ```json
 {
   "mcpServers": {
     "web-ui-skills": {
       "command": "npx",
-      "args": ["web-ui-skills-mcp"],
+      "args": ["web-ui-skills", "mcp"],
       "env": {
         "WEB_UI_SKILLS_CLIENT": "codex"
       }
@@ -167,10 +170,42 @@ Register the server in your MCP client using `stdio`:
 }
 ```
 
+Another client, for example Claude, uses the same shape:
+
+```json
+{
+  "mcpServers": {
+    "web-ui-skills": {
+      "command": "npx",
+      "args": ["web-ui-skills", "mcp"],
+      "env": {
+        "WEB_UI_SKILLS_CLIENT": "claude"
+      }
+    }
+  }
+}
+```
+
+Project-local install through MCP uses tool arguments, not the client config:
+
+```json
+{
+  "tools": ["codex"],
+  "groups": ["ui"],
+  "project": true,
+  "projectRoot": "/path/to/project"
+}
+```
+
+That writes into `./.codex/skills` inside the project instead of `~/.codex/skills`.
+
+A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/codex-mcp-config.json), and a generic template is available at [examples/mcp-config.json](/home/prachwal/src/docs/web-ui-skills/examples/mcp-config.json).
+
 It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_skills`, and `remove_skills`.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
-Use it from an MCP client by wiring the command through standard `stdio`.
+Pass `project: true` and `projectRoot` in MCP calls when you want the skills copied into the current project instead of global user folders.
+Use it from an MCP client by wiring the command through standard `stdio` and the JSON config above.
 
 ## CI/CD
 

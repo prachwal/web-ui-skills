@@ -52,6 +52,13 @@ function normalizeTools(tools, allTools) {
   return [...new Set(tools)];
 }
 
+function resolveTargetDirs({ project = false, projectRoot } = {}) {
+  return installer.resolveToolDirs({
+    project,
+    projectRoot: projectRoot || process.cwd(),
+  });
+}
+
 function resolveClientName(value) {
   if (!value) return null;
 
@@ -76,8 +83,22 @@ function describeClientContext(context) {
   return context.client ? `Active MCP client: ${context.client}.` : 'Active MCP client: unknown.';
 }
 
-function runCliOperation({ mode, tools, skills = [], groups = [], allTools = false }) {
+function runCliOperation({
+  mode,
+  tools,
+  skills = [],
+  groups = [],
+  allTools = false,
+  project = false,
+  projectRoot = null,
+}) {
   const args = [];
+  if (project) {
+    args.push('--project');
+    if (projectRoot) {
+      args.push('--project-root', projectRoot);
+    }
+  }
   if (mode === 'remove' && allTools) {
     args.push('--all');
   } else if (tools && tools.length > 0) {
@@ -101,14 +122,25 @@ function runCliOperation({ mode, tools, skills = [], groups = [], allTools = fal
   return captureConsole(() => installer.runCli(args));
 }
 
-function installOrUpdate({ mode, tools, skills = [], groups = [], allTools = false, context = resolveServerContext() }) {
-  const result = runCliOperation({ mode, tools, skills, groups, allTools });
+function installOrUpdate({
+  mode,
+  tools,
+  skills = [],
+  groups = [],
+  allTools = false,
+  project = false,
+  projectRoot = null,
+  context = resolveServerContext(),
+}) {
+  const result = runCliOperation({ mode, tools, skills, groups, allTools, project, projectRoot });
   const ok = result.result === 0;
 
   return jsonContent({
     ok,
     mode,
     client: context.client,
+    project,
+    projectRoot,
     tools: normalizeTools(tools, allTools),
     skills,
     groups,
@@ -120,8 +152,8 @@ function installOrUpdate({ mode, tools, skills = [], groups = [], allTools = fal
   });
 }
 
-function removeAllSkillsFromTool(toolName) {
-  const targetDir = installer.TOOLS[toolName];
+function removeAllSkillsFromTool(toolName, targetDirs) {
+  const targetDir = targetDirs[toolName];
   const skillsSource = installer.getSkillsSource();
   const skills = installer.getTopLevelSkills(skillsSource);
   const removed = [];
@@ -150,9 +182,12 @@ function removeSkillSelection({
   groups = [],
   allTools = false,
   allSkills = false,
+  project = false,
+  projectRoot = null,
   context = resolveServerContext(),
 }) {
   const resolvedTools = normalizeTools(tools, allTools);
+  const targetDirs = resolveTargetDirs({ project, projectRoot });
 
   if (!allTools && (!tools || tools.length === 0)) {
     return jsonContent({
@@ -162,11 +197,13 @@ function removeSkillSelection({
   }
 
   if (allSkills) {
-    const results = resolvedTools.map((tool) => removeAllSkillsFromTool(tool));
+    const results = resolvedTools.map((tool) => removeAllSkillsFromTool(tool, targetDirs));
     return jsonContent({
       ok: true,
       mode: 'remove',
       client: context.client,
+      project,
+      projectRoot,
       allSkills: true,
       tools: resolvedTools,
       results,
@@ -179,12 +216,16 @@ function removeSkillSelection({
     skills,
     groups,
     allTools,
+    project,
+    projectRoot,
   });
 
   return jsonContent({
     ok: result.result === 0,
     mode: 'remove',
     client: context.client,
+    project,
+    projectRoot,
     allSkills: false,
     tools: resolvedTools,
     skills,
@@ -277,12 +318,14 @@ function createServer(options = {}) {
     'install_skills',
     {
       title: 'Install skills',
-      description: 'Install one or more skills or groups to selected tools. If no tools are provided, all tools are targeted.',
+      description: 'Install one or more skills or groups to selected tools. If no tools are provided, all tools are targeted. Can install globally or into the current project.',
       inputSchema: z.object({
         tools: z.array(toolNameSchema).optional(),
         skills: z.array(z.string().min(1)).optional(),
         groups: z.array(z.string().min(1)).optional(),
         allTools: z.boolean().optional(),
+        project: z.boolean().optional(),
+        projectRoot: z.string().min(1).optional(),
       }),
     },
     async (input) => installOrUpdate({ mode: 'install', ...input, context }),
@@ -292,12 +335,14 @@ function createServer(options = {}) {
     'update_skills',
     {
       title: 'Update skills',
-      description: 'Reinstall one or more skills or groups to refresh local copies for the selected tools.',
+      description: 'Reinstall one or more skills or groups to refresh local copies for the selected tools. Can target global or project-local installs.',
       inputSchema: z.object({
         tools: z.array(toolNameSchema).optional(),
         skills: z.array(z.string().min(1)).optional(),
         groups: z.array(z.string().min(1)).optional(),
         allTools: z.boolean().optional(),
+        project: z.boolean().optional(),
+        projectRoot: z.string().min(1).optional(),
       }),
     },
     async (input) => installOrUpdate({ mode: 'update', ...input, context }),
@@ -307,13 +352,15 @@ function createServer(options = {}) {
     'remove_skills',
     {
       title: 'Remove skills',
-      description: 'Remove one or more skills or groups from selected tools. Use allSkills=true to remove every installed skill from the selected tools.',
+      description: 'Remove one or more skills or groups from selected tools. Use allSkills=true to remove every installed skill from the selected tools. Can target global or project-local installs.',
       inputSchema: z.object({
         tools: z.array(toolNameSchema).optional(),
         skills: z.array(z.string().min(1)).optional(),
         groups: z.array(z.string().min(1)).optional(),
         allTools: z.boolean().optional(),
         allSkills: z.boolean().optional(),
+        project: z.boolean().optional(),
+        projectRoot: z.string().min(1).optional(),
       }),
     },
     async (input) => removeSkillSelection({ ...input, context }),
@@ -324,9 +371,9 @@ function createServer(options = {}) {
     {
       title: 'How to use Web UI Skills MCP',
       description: 'Generate a concise plan for searching, installing, updating, or removing skills through this MCP server.',
-      argsSchema: z.object({
+      argsSchema: {
         goal: z.string().min(1).optional(),
-      }),
+      },
     },
     async ({ goal }) => {
       const objective = goal ? `Goal: ${goal}` : 'Goal: inspect, install, update, or remove skills.';
@@ -346,6 +393,7 @@ function createServer(options = {}) {
                 '5. Call remove_skills to delete selected skills, groups, or all skills in a selected tool scope.',
                 '6. Prefer a single explicit tool scope unless the user clearly wants all tools.',
                 `7. ${describeClientContext(context)}`,
+                '8. Set project=true to install into project-local tool folders instead of global user folders.',
                 objective,
               ].join('\n'),
             },
@@ -360,9 +408,9 @@ function createServer(options = {}) {
     {
       title: 'Install Group Plan',
       description: 'Generate a concise step-by-step plan for installing a skill group or a full skills bundle.',
-      argsSchema: z.object({
+      argsSchema: {
         group: z.string().min(1).optional(),
-      }),
+      },
     },
     async ({ group }) => {
       const target = group ? `Target group: ${group}` : 'Target group: all groups or all skills as requested.';
@@ -381,6 +429,7 @@ function createServer(options = {}) {
                 '4. Prefer the smallest scope that satisfies the request.',
                 '5. If the user wants everything, pass allTools=true or target all tools explicitly.',
                 `6. ${describeClientContext(context)}`,
+                '7. Set project=true to install into project-local tool folders instead of global user folders.',
                 target,
               ].join('\n'),
             },
@@ -395,10 +444,10 @@ function createServer(options = {}) {
     {
       title: 'Update Skills Plan',
       description: 'Generate a concise step-by-step plan for refreshing installed skills or groups.',
-      argsSchema: z.object({
+      argsSchema: {
         group: z.string().min(1).optional(),
         tools: z.array(toolNameSchema).optional(),
-      }),
+      },
     },
     async ({ group, tools }) => {
       const scope = tools && tools.length > 0 ? `Tools: ${tools.join(', ')}` : 'Tools: use the smallest explicit scope available.';
@@ -418,6 +467,7 @@ function createServer(options = {}) {
                 '4. Prefer updating only what the user asked for; do not broaden the scope unnecessarily.',
                 '5. If no tools are given, update all tools only when the user explicitly wants a full refresh.',
                 `6. ${describeClientContext(context)}`,
+                '7. Set project=true to update project-local installs instead of global user folders.',
                 scope,
                 target,
               ].join('\n'),
@@ -433,11 +483,11 @@ function createServer(options = {}) {
     {
       title: 'Remove Skills Plan',
       description: 'Generate a concise step-by-step plan for removing installed skills or groups safely.',
-      argsSchema: z.object({
+      argsSchema: {
         group: z.string().min(1).optional(),
         tools: z.array(toolNameSchema).optional(),
         allSkills: z.boolean().optional(),
-      }),
+      },
     },
     async ({ group, tools, allSkills }) => {
       const scope = tools && tools.length > 0 ? `Tools: ${tools.join(', ')}` : 'Tools: require an explicit scope before removing anything.';
@@ -457,6 +507,7 @@ function createServer(options = {}) {
                 '4. Use allSkills=true only when the user explicitly wants a full wipe of the selected tool scope.',
                 '5. Prefer removing one group or one skill set at a time when possible.',
                 `6. ${describeClientContext(context)}`,
+                '7. Set project=true to remove from project-local installs instead of global user folders.',
                 scope,
                 target,
               ].join('\n'),

@@ -13,10 +13,11 @@ function createTempHome() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'web-ui-skills-test-'));
 }
 
-function runCli(args, env = {}) {
+function runCli(args, env = {}, cwd = process.cwd()) {
   return execFileSync(process.execPath, [script, ...args], {
     encoding: 'utf8',
     env: { ...process.env, ...env },
+    cwd,
   });
 }
 
@@ -29,6 +30,20 @@ describe('parser', () => {
     assert.equal(parsed.all, true);
     assert.deepEqual(parsed.requestedTools, ['codex']);
     assert.deepEqual(parsed.selectedSkills, ['vue-ui']);
+  });
+
+  test('recognizes the mcp command', () => {
+    const parsed = installer.parseArgs(['mcp']);
+
+    assert.equal(parsed.command, 'mcp');
+  });
+
+  test('recognizes project installs', () => {
+    const parsed = installer.parseArgs(['--project', '--project-root', '/tmp/project', '--codex']);
+
+    assert.equal(parsed.project, true);
+    assert.equal(parsed.projectRoot, '/tmp/project');
+    assert.deepEqual(parsed.requestedTools, ['codex']);
   });
 
   test('recognizes group installs', () => {
@@ -120,6 +135,15 @@ describe('cli integration', () => {
     assert.ok(fs.existsSync(path.join(home, 'skills', 'storybook-ui', 'SKILL.md')));
   });
 
+  test('installs skills into a project-local tool directory', () => {
+    const projectRoot = createTempHome();
+
+    runCli(['--project', '--codex', 'preact-ui', 'vue-ui'], {}, projectRoot);
+
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'preact-ui', 'SKILL.md')));
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'vue-ui', 'SKILL.md')));
+  });
+
   test('lists predefined groups', () => {
     const output = runCli(['groups']);
 
@@ -146,5 +170,23 @@ describe('safety', () => {
     assert.throws(() => {
       runCli(['--mystery']);
     }, /Unknown option\(s\): --mystery/);
+  });
+
+  test('starts the local MCP server command without mutating other state', () => {
+    const originalSpawnSync = installer.__test__.spawnSync;
+    let called = false;
+
+    installer.__test__.spawnSync = (...args) => {
+      called = true;
+      assert.ok(args[1][0].endsWith(path.join('bin', 'mcp.mjs')));
+      return { status: 0 };
+    };
+
+    try {
+      assert.equal(installer.runMcpServer(), 0);
+      assert.equal(called, true);
+    } finally {
+      installer.__test__.spawnSync = originalSpawnSync;
+    }
   });
 });

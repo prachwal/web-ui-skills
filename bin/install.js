@@ -2,13 +2,24 @@
 'use strict';
 
 const fs = require('fs');
+const childProcess = require('child_process');
 const os = require('os');
 const path = require('path');
 
+const runtime = {
+  spawnSync: childProcess.spawnSync,
+};
+
 const SKILL_FILE = 'SKILL.md';
 const GROUPS_FILE = 'groups.json';
+const TOOL_FOLDER_NAMES = {
+  codex: '.codex',
+  claude: '.claude',
+  copilot: '.copilot',
+  kilo: '.kilocode',
+};
 
-function resolveToolDir(toolName) {
+function resolveGlobalToolDir(toolName) {
   const homeOverrides = {
     codex: process.env.CODEX_HOME,
     claude: process.env.CLAUDE_HOME,
@@ -24,6 +35,32 @@ function resolveToolDir(toolName) {
   };
 
   return path.join(homeOverrides[toolName] || defaults[toolName], 'skills');
+}
+
+function resolveProjectToolDir(toolName, projectRoot = process.cwd()) {
+  return path.join(projectRoot, TOOL_FOLDER_NAMES[toolName], 'skills');
+}
+
+function resolveToolDirs({ project = false, projectRoot = process.cwd() } = {}) {
+  if (project) {
+    return {
+      codex: resolveProjectToolDir('codex', projectRoot),
+      claude: resolveProjectToolDir('claude', projectRoot),
+      copilot: resolveProjectToolDir('copilot', projectRoot),
+      kilo: resolveProjectToolDir('kilo', projectRoot),
+    };
+  }
+
+  return {
+    codex: resolveGlobalToolDir('codex'),
+    claude: resolveGlobalToolDir('claude'),
+    copilot: resolveGlobalToolDir('copilot'),
+    kilo: resolveGlobalToolDir('kilo'),
+  };
+}
+
+function resolveToolDir(toolName) {
+  return resolveToolDirs()[toolName];
 }
 
 const TOOLS = {
@@ -232,8 +269,8 @@ function resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSo
   return filterSelectedSkills(skills, combined, skillsSource);
 }
 
-function installForTool(toolName, selectedSkills = null, selectedGroups = null) {
-  const targetDir = TOOLS[toolName];
+function installForTool(toolName, selectedSkills = null, selectedGroups = null, targetDirs = TOOLS) {
+  const targetDir = targetDirs[toolName];
   const skillsSource = getSkillsSource();
 
   if (!fs.existsSync(skillsSource)) {
@@ -274,9 +311,10 @@ function deleteForTool(
   selectedSkills,
   selectedGroups = null,
   skillsSource = getSkillsSource(),
+  targetDirs = TOOLS,
   deleteAll = false,
 ) {
-  const targetDir = TOOLS[toolName];
+  const targetDir = targetDirs[toolName];
   const skills = getTopLevelSkills(skillsSource);
   const skillsToDelete = resolveRequestedSkills(skills, selectedSkills, selectedGroups, skillsSource);
 
@@ -348,10 +386,27 @@ function listGroups(skillsSource = getSkillsSource()) {
   console.log();
 }
 
+function runMcpServer() {
+  const mcpEntry = path.join(__dirname, 'mcp.mjs');
+  const result = runtime.spawnSync(process.execPath, [mcpEntry], {
+    stdio: 'inherit',
+    env: process.env,
+  });
+
+  if (result.error) {
+    console.error(`✗ Failed to start MCP server: ${result.error.message}`);
+    return 1;
+  }
+
+  return typeof result.status === 'number' ? result.status : 0;
+}
+
 function parseArgs(argv) {
   const state = {
     command: 'install',
     all: false,
+    project: false,
+    projectRoot: null,
     wipeAll: false,
     help: false,
     list: false,
@@ -376,6 +431,7 @@ function parseArgs(argv) {
       arg === 'list' ||
       arg === 'ls' ||
       arg === 'groups' ||
+      arg === 'mcp' ||
       arg === 'update' ||
       arg === 'remove' ||
       arg === 'rm' ||
@@ -397,6 +453,16 @@ function parseArgs(argv) {
       state.deleteMode = true;
     } else if (arg === '--all') {
       state.all = true;
+    } else if (arg === '--project') {
+      state.project = true;
+    } else if (arg === '--project-root') {
+      const next = argv[i + 1];
+      if (next && !next.startsWith('--')) {
+        state.projectRoot = next;
+        i += 1;
+      }
+    } else if (arg.startsWith('--project-root=')) {
+      state.projectRoot = arg.slice('--project-root='.length);
     } else if (arg === '--everything') {
       state.wipeAll = true;
     } else if (arg === '--group' || arg === '--group=') {
@@ -438,6 +504,8 @@ Usage: npx web-ui-skills [command] [options]
 
 Options:
   --all        Install for all supported tools (default when no tool flag is given)
+  --project    Install into project-local .codex/.claude/.copilot/.kilocode folders
+  --project-root DIR  Set the project root used with --project
   --codex      Install to ~/.codex/skills
   --claude     Install to ~/.claude/skills
   --copilot    Install to ~/.copilot/skills
@@ -457,6 +525,7 @@ Commands:
   find         Search available skills
   list         List available skills
   groups       List available groups
+  mcp          Start the local MCP server
   remove       Remove selected skills from the target tool directory
   ls           Alias for list
   rm           Alias for remove
@@ -469,11 +538,13 @@ Examples:
   npx web-ui-skills --codex         # install only for Codex
   npx web-ui-skills --claude        # install only for Claude Code
   npx web-ui-skills --codex --kilo  # install for Codex and Kilo
+  npx web-ui-skills --project --codex preact-ui   # install into ./.codex/skills
   npx web-ui-skills preact-ui vue-ui # install only selected skills
   npx web-ui-skills group ui         # install a predefined group
   npx web-ui-skills --group ui       # install a group via flag
   npx web-ui-skills groups           # list predefined groups
   npx web-ui-skills find ui          # search matching skills
+  npx web-ui-skills mcp              # start the local MCP server
   npx web-ui-skills --codex remove vue-ui    # remove a skill from a specific tool dir
   npx web-ui-skills remove --all vue-ui      # remove a skill from all tool dirs
   npx web-ui-skills remove --all --everything # remove all installed skills from all tool dirs
@@ -512,6 +583,14 @@ function runCli(argv = process.argv.slice(2)) {
     return 0;
   }
 
+  if (parsed.command === 'mcp') {
+    return runMcpServer();
+  }
+
+  const targetDirs = parsed.project
+    ? resolveToolDirs({ project: true, projectRoot: parsed.projectRoot || process.cwd() })
+    : TOOLS;
+
   if (parsed.command === 'list' || parsed.list) {
     const { skills, warnings } = validateSkillTree();
 
@@ -546,11 +625,11 @@ function runCli(argv = process.argv.slice(2)) {
   let ok = true;
   for (const tool of targetTools) {
     const action = parsed.deleteMode ? 'Deleting from' : 'Installing for';
-    console.log(`${action} ${tool} → ${TOOLS[tool]}`);
+    console.log(`${action} ${tool} → ${targetDirs[tool]}`);
     if (parsed.deleteMode) {
       const deleteAll = parsed.all && parsed.wipeAll && parsed.selectedSkills.length === 0 && parsed.selectedGroups.length === 0;
-      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups, getSkillsSource(), deleteAll)) ok = false;
-    } else if (!installForTool(tool, parsed.selectedSkills, parsed.selectedGroups)) {
+      if (!deleteForTool(tool, parsed.selectedSkills, parsed.selectedGroups, getSkillsSource(), targetDirs, deleteAll)) ok = false;
+    } else if (!installForTool(tool, parsed.selectedSkills, parsed.selectedGroups, targetDirs)) {
       ok = false;
     }
   }
@@ -581,9 +660,13 @@ module.exports = {
   listGroups,
   readSkillName,
   resolveToolDir,
+  resolveProjectToolDir,
+  resolveToolDirs,
   resolveRequestedSkills,
+  runMcpServer,
   runCli,
   searchSkills,
   loadSkillGroups,
   validateSkillTree,
+  __test__: runtime,
 };
