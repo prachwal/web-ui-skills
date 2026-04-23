@@ -483,6 +483,17 @@ describe('skill content and reference tools', () => {
     assert.equal(payload.content, null);
   });
 
+  test('get_skill_references rejects nested path traversal attempts', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({
+      name: 'preact-ui',
+      reference: 'subdir/../../SKILL.md',
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.content, null);
+  });
+
   test('search_skills includes description in results', async () => {
     const server = createServer();
     const result = await server._registeredTools.search_skills.handler({ query: 'ui' });
