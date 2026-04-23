@@ -6,7 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { describe, test } from 'node:test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { createServer } from '../bin/mcp.mjs';
+import { createServer, installOrUpdate, resolveServerContext } from '../bin/mcp.mjs';
 
 process.env.WEB_UI_SKILLS_USER_SOURCE = path.join(os.tmpdir(), 'web-ui-skills-test-empty-user-source');
 
@@ -112,6 +112,53 @@ describe('installer', () => {
 });
 
 describe('client context', () => {
+  test('reads project-local defaults from environment', () => {
+    const originalProject = process.env.WEB_UI_SKILLS_PROJECT;
+    const originalProjectRoot = process.env.WEB_UI_SKILLS_PROJECT_ROOT;
+    const projectRoot = createTempHome();
+
+    process.env.WEB_UI_SKILLS_PROJECT = 'true';
+    process.env.WEB_UI_SKILLS_PROJECT_ROOT = projectRoot;
+
+    try {
+      const context = resolveServerContext();
+
+      assert.equal(context.project, true);
+      assert.equal(context.projectRoot, projectRoot);
+    } finally {
+      if (originalProject === undefined) {
+        delete process.env.WEB_UI_SKILLS_PROJECT;
+      } else {
+        process.env.WEB_UI_SKILLS_PROJECT = originalProject;
+      }
+
+      if (originalProjectRoot === undefined) {
+        delete process.env.WEB_UI_SKILLS_PROJECT_ROOT;
+      } else {
+        process.env.WEB_UI_SKILLS_PROJECT_ROOT = originalProjectRoot;
+      }
+    }
+  });
+
+  test('uses context project defaults when install input omits project fields', () => {
+    const projectRoot = createTempHome();
+    const result = installOrUpdate({
+      mode: 'install',
+      tools: ['codex'],
+      skills: ['docs-instructions'],
+      context: {
+        client: 'codex',
+        project: true,
+        projectRoot,
+      },
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.project, true);
+    assert.equal(payload.projectRoot, projectRoot);
+    assert.ok(fs.existsSync(path.join(projectRoot, '.codex', 'skills', 'docs-instructions', 'SKILL.md')));
+  });
+
   test('tags tool responses with the active client name', () => {
     const home = createTempHome();
     const moduleUrl = mcpFileUrl();

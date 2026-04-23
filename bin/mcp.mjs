@@ -130,6 +130,15 @@ function resolveClientName(value) {
   return CLIENT_NAMES.includes(normalized) ? normalized : null;
 }
 
+function resolveBooleanEnv(value) {
+  if (value === undefined || value === null || value === '') return null;
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return null;
+}
+
 function resolveServerContext(options = {}) {
   const client =
     resolveClientName(options.client) ??
@@ -140,7 +149,12 @@ function resolveServerContext(options = {}) {
     resolveClientName(process.env.COPILOT_CLIENT) ??
     resolveClientName(process.env.KILO_CLIENT);
 
-  return { client };
+  const project =
+    resolveBooleanEnv(options.project) ??
+    resolveBooleanEnv(process.env.WEB_UI_SKILLS_PROJECT);
+  const projectRoot = options.projectRoot ?? process.env.WEB_UI_SKILLS_PROJECT_ROOT ?? null;
+
+  return { client, project, projectRoot };
 }
 
 function describeClientContext(context) {
@@ -192,19 +206,29 @@ function installOrUpdate({
   skills = [],
   groups = [],
   allTools = false,
-  project = false,
+  project = undefined,
   projectRoot = null,
   context = resolveServerContext(),
 }) {
-  const result = runCliOperation({ mode, tools, skills, groups, allTools, project, projectRoot });
+  const effectiveProject = project ?? context.project ?? false;
+  const effectiveProjectRoot = projectRoot ?? context.projectRoot ?? null;
+  const result = runCliOperation({
+    mode,
+    tools,
+    skills,
+    groups,
+    allTools,
+    project: effectiveProject,
+    projectRoot: effectiveProjectRoot,
+  });
   const ok = result.result === 0;
 
   return jsonContent({
     ok,
     mode,
     client: context.client,
-    project,
-    projectRoot,
+    project: effectiveProject,
+    projectRoot: effectiveProjectRoot,
     tools: normalizeTools(tools, allTools),
     skills,
     groups,
@@ -246,12 +270,17 @@ function removeSkillSelection({
   groups = [],
   allTools = false,
   allSkills = false,
-  project = false,
+  project = undefined,
   projectRoot = null,
   context = resolveServerContext(),
 }) {
+  const effectiveProject = project ?? context.project ?? false;
+  const effectiveProjectRoot = projectRoot ?? context.projectRoot ?? null;
   const resolvedTools = normalizeTools(tools, allTools);
-  const targetDirs = resolveTargetDirs({ project, projectRoot });
+  const targetDirs = resolveTargetDirs({
+    project: effectiveProject,
+    projectRoot: effectiveProjectRoot,
+  });
 
   if (!allTools && (!tools || tools.length === 0)) {
     return jsonContent({
@@ -266,8 +295,8 @@ function removeSkillSelection({
       ok: true,
       mode: 'remove',
       client: context.client,
-      project,
-      projectRoot,
+      project: effectiveProject,
+      projectRoot: effectiveProjectRoot,
       allSkills: true,
       tools: resolvedTools,
       results,
@@ -280,16 +309,16 @@ function removeSkillSelection({
     skills,
     groups,
     allTools,
-    project,
-    projectRoot,
+    project: effectiveProject,
+    projectRoot: effectiveProjectRoot,
   });
 
   return jsonContent({
     ok: result.result === 0,
     mode: 'remove',
     client: context.client,
-    project,
-    projectRoot,
+    project: effectiveProject,
+    projectRoot: effectiveProjectRoot,
     allSkills: false,
     tools: resolvedTools,
     skills,
@@ -396,8 +425,8 @@ function createServer(options = {}) {
     async (input = {}) => jsonContent({
       client: context.client,
       overlays: resolveOverlayInfo({
-        project: input.project,
-        projectRoot: input.projectRoot || process.cwd(),
+        project: input.project ?? context.project ?? false,
+        projectRoot: input.projectRoot ?? context.projectRoot ?? process.cwd(),
       }),
     }),
   );
@@ -416,7 +445,7 @@ function createServer(options = {}) {
       client: context.client,
       sync: installer.syncOverlaySources({
         target: input.target || 'project',
-        projectRoot: input.projectRoot || process.cwd(),
+        projectRoot: input.projectRoot ?? context.projectRoot ?? process.cwd(),
       }),
     }),
   );
@@ -435,7 +464,7 @@ function createServer(options = {}) {
       client: context.client,
       promote: installer.promoteOverlaySkill({
         name: input.name,
-        projectRoot: input.projectRoot || process.cwd(),
+        projectRoot: input.projectRoot ?? context.projectRoot ?? process.cwd(),
       }),
     }),
   );

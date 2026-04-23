@@ -1,5 +1,6 @@
 .DS_Store
 .codex
+.web-ui-skills/
 .tmp/
 
 # Local Netlify folder

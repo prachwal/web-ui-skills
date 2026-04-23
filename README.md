@@ -204,6 +204,20 @@ Global Codex setup:
 }
 ```
 
+For this repository, you can override the local Codex MCP defaults with [.codex/config.toml](.codex/config.toml):
+
+```toml
+[mcp_servers.web-ui-skills]
+command = "node"
+args = ["/home/prachwal/src/docs/web-ui-skills/bin/mcp.mjs"]
+enabled = true
+
+[mcp_servers.web-ui-skills.env]
+WEB_UI_SKILLS_CLIENT = "codex"
+WEB_UI_SKILLS_PROJECT = "true"
+WEB_UI_SKILLS_PROJECT_ROOT = "/home/prachwal/src/docs/web-ui-skills"
+```
+
 Another client, for example Claude, uses the same shape:
 
 ```json
@@ -220,7 +234,7 @@ Another client, for example Claude, uses the same shape:
 }
 ```
 
-Project-local install through MCP uses tool arguments, not the client config:
+Project-local install through MCP can use tool arguments:
 
 ```json
 {
@@ -242,7 +256,7 @@ It also exposes `sync_overlays` for writing the merged overlay view into the use
 It also exposes `promote_skill` for copying one project-local skill into the user overlay directory.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
-Pass `project: true` and `projectRoot` in MCP calls when you want the skills copied into the current project instead of global user folders.
+Pass `project: true` and `projectRoot` in MCP calls, or set `WEB_UI_SKILLS_PROJECT=true` and `WEB_UI_SKILLS_PROJECT_ROOT`, when you want the skills copied into the current project instead of global user folders.
 Use it from an MCP client by wiring the command through standard `stdio` and the JSON config above.
 
 MCP tools and what they do:
