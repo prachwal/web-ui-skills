@@ -370,7 +370,7 @@ function getSkillContent(name, skillsSource = getSkillsSources()) {
   const skillFile = path.join(detail.path, SKILL_FILE);
   if (!fs.existsSync(skillFile)) return null;
   const content = fs.readFileSync(skillFile, 'utf8');
-  const match = content.match(/^---\n[\s\S]*?\n---\n/);
+  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/);
   return match ? content.slice(match[0].length) : content;
 }
 
