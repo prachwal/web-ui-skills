@@ -7,6 +7,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 
+import { skillCache } from './cache.mjs';
+import { vectorSearch } from './vector.mjs';
+
 const require = createRequire(import.meta.url);
 const installer = require('./install.js');
 const { version: packageVersion } = require('../package.json');
@@ -244,6 +247,7 @@ function installOrUpdate({
     projectRoot: effectiveProjectRoot,
   });
   const ok = result.result === 0;
+  if (ok) skillCache.invalidate('wus:').catch(() => {});
 
   return prunedJsonContent({
     ok,
@@ -313,6 +317,7 @@ function removeSkillSelection({
 
   if (allSkills) {
     const results = resolvedTools.map((tool) => removeAllSkillsFromTool(tool, targetDirs));
+    skillCache.invalidate('wus:').catch(() => {});
     return prunedJsonContent({
       ok: true,
       mode: 'remove',
@@ -335,6 +340,7 @@ function removeSkillSelection({
     projectRoot: effectiveProjectRoot,
   });
 
+  skillCache.invalidate('wus:').catch(() => {});
   return prunedJsonContent({
     ok: result.result === 0,
     mode: 'remove',
@@ -358,6 +364,13 @@ function createServer(options = {}) {
   const server = new McpServer({
     name: 'web-ui-skills',
     version: packageVersion,
+  });
+
+  setImmediate(async () => {
+    if (await vectorSearch.available()) {
+      const skills = installer.getAllSkillDetails();
+      await vectorSearch.ensureIndex(skills).catch(() => {});
+    }
   });
 
   server.registerResource(
@@ -404,9 +417,26 @@ function createServer(options = {}) {
       }),
     },
     async ({ query, limit, offset }) => {
-      const allMatches = installer.searchSkills(query);
       const effectiveLimit = limit ?? 20;
       const effectiveOffset = offset ?? 0;
+
+      const cacheKey = `wus:search:${query}`;
+      let allMatches = await skillCache.get(cacheKey);
+
+      if (!allMatches) {
+        const vectorResults = await vectorSearch.search(query, 40);
+        if (vectorResults) {
+          const allDetails = installer.getAllSkillDetails();
+          const detailMap = new Map(allDetails.map((s) => [s.name, s]));
+          allMatches = vectorResults
+            .map((r) => detailMap.get(r.name))
+            .filter(Boolean);
+        } else {
+          allMatches = installer.searchSkills(query);
+        }
+        await skillCache.set(cacheKey, allMatches, 120);
+      }
+
       const total = allMatches.length;
       const matches = allMatches.slice(effectiveOffset, effectiveOffset + effectiveLimit);
 
@@ -417,7 +447,7 @@ function createServer(options = {}) {
         limit: effectiveLimit,
         offset: effectiveOffset,
         matches: matches.map((skill) => ({
-          folder: skill.dir,
+          folder: skill.dir || skill.folder,
           name: skill.name,
           description: skill.description,
         })),
@@ -815,6 +845,15 @@ export async function runMcpServer() {
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  process.on('SIGTERM', async () => {
+    await skillCache.close().catch(() => {});
+    process.exit(0);
+  });
+  process.on('SIGINT', async () => {
+    await skillCache.close().catch(() => {});
+    process.exit(0);
+  });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
