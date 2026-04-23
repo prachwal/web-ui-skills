@@ -75,7 +75,7 @@ export class VectorSearch {
         .filter(Boolean)
         .join(' ');
       const vector = await embed(this._pipe, text);
-      points.push({ id: Math.abs(hashCode(skill.name)), vector, payload: { name: skill.name } });
+      points.push({ id: hashCode(skill.name) >>> 0, vector, payload: { name: skill.name } });
     }
 
     await this._client.upsert(COLLECTION, { points });
