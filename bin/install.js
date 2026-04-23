@@ -391,7 +391,8 @@ function getSkillReferenceContent(name, reference, skillsSource = getSkillsSourc
   if (!detail) return null;
   const refsDir = path.join(detail.path, 'references');
   const resolved = path.resolve(refsDir, reference);
-  if (!resolved.startsWith(refsDir + path.sep)) return null;
+  const rel = path.relative(refsDir, resolved);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) return null;
   if (!fs.existsSync(resolved)) return null;
   return fs.readFileSync(resolved, 'utf8');
 }
