@@ -9,7 +9,7 @@ class InMemoryBackend {
   async get(key) {
     const entry = this._store.get(key);
     if (!entry) return null;
-    if (Date.now() > entry.expiry) {
+    if (Date.now() >= entry.expiry) {
       this._store.delete(key);
       return null;
     }
@@ -52,9 +52,10 @@ class RedisBackend {
   async invalidate(pattern) {
     // pattern uses glob syntax for Redis SCAN
     const globPattern = pattern.replace(/\.\*/g, '*').replace(/\[^/g, '[^');
+    const safeGlob = globPattern.endsWith('*') ? globPattern : globPattern + '*';
     let cursor = '0';
     do {
-      const [nextCursor, keys] = await this._redis.scan(cursor, 'MATCH', globPattern, 'COUNT', 100);
+      const [nextCursor, keys] = await this._redis.scan(cursor, 'MATCH', safeGlob, 'COUNT', 100);
       cursor = nextCursor;
       if (keys.length > 0) await this._redis.del(...keys);
     } while (cursor !== '0');
