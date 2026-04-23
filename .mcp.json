@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "web-ui-skills": {
+      "command": "node",
+      "args": ["./bin/mcp.mjs"],
+      "env": {
+        "WEB_UI_SKILLS_CLIENT": "claude"
+      }
+    }
+  },
+  "_env_examples": {
+    "REDIS_URL": "redis://localhost:6379",
+    "QDRANT_URL": "http://localhost:6333"
+  }
+}
