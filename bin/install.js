@@ -71,6 +71,39 @@ const TOOLS = {
   kilo: resolveToolDir('kilo'),
 };
 
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const cache = new Map();
+
+function getCached(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiry) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCached(key, value, ttl = CACHE_TTL) {
+  cache.set(key, {
+    value,
+    expiry: Date.now() + ttl,
+  });
+}
+
+function invalidateCache(pattern = null) {
+  if (!pattern) {
+    cache.clear();
+    return;
+  }
+  const regex = new RegExp(pattern);
+  for (const key of cache.keys()) {
+    if (regex.test(key)) {
+      cache.delete(key);
+    }
+  }
+}
+
 function copyDir(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -131,21 +164,30 @@ function getTopLevelSkills(skillsSource = getSkillsSources()) {
 
 function getSkillEntries(skillsSource = getSkillsSources()) {
   const sources = normalizeSkillsSources(skillsSource);
+  const cacheKey = sources.length === 1 ? `skill-entries:${sources[0]}` : 'skill-entries:merged';
+
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  let result;
   if (sources.length > 1) {
-    return getMergedSkillEntries(sources);
+    result = getMergedSkillEntries(sources);
+  } else {
+    const source = sources[0];
+    result = getTopLevelSkills(source).map((skill) => {
+      const skillFile = path.join(source, skill, SKILL_FILE);
+      const metadata = readSkillMetadata(skillFile);
+      return {
+        dir: skill,
+        name: metadata.name || skill,
+        description: metadata.description || '',
+        path: path.join(source, skill),
+      };
+    });
   }
 
-  const source = sources[0];
-  return getTopLevelSkills(source).map((skill) => {
-    const skillFile = path.join(source, skill, SKILL_FILE);
-    const metadata = readSkillMetadata(skillFile);
-    return {
-      dir: skill,
-      name: metadata.name || skill,
-      description: metadata.description || '',
-      path: path.join(source, skill),
-    };
-  });
+  setCached(cacheKey, result);
+  return result;
 }
 
 function loadSkillGroupsFromSource(skillsSource = getSkillsSource()) {
@@ -169,11 +211,20 @@ function loadSkillGroupsFromSource(skillsSource = getSkillsSource()) {
 
 function loadSkillGroups(skillsSource = getSkillsSources()) {
   const sources = normalizeSkillsSources(skillsSource);
+  const cacheKey = sources.length === 1 ? `skill-groups:${sources[0]}` : 'skill-groups:merged';
+
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  let result;
   if (sources.length > 1) {
-    return loadMergedSkillGroups(sources);
+    result = loadMergedSkillGroups(sources);
+  } else {
+    result = loadSkillGroupsFromSource(sources[0]);
   }
 
-  return loadSkillGroupsFromSource(sources[0]);
+  setCached(cacheKey, result);
+  return result;
 }
 
 function getMergedSkillEntries(skillsSources = getSkillsSources()) {
@@ -365,13 +416,20 @@ function getAllSkillDetails(skillsSource = getSkillsSources()) {
 }
 
 function getSkillContent(name, skillsSource = getSkillsSources()) {
+  const cacheKey = `skill-content:${name.toLowerCase()}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const detail = getSkillDetail(name, skillsSource);
   if (!detail) return null;
   const skillFile = path.join(detail.path, SKILL_FILE);
   if (!fs.existsSync(skillFile)) return null;
   const content = fs.readFileSync(skillFile, 'utf8');
   const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n/);
-  return match ? content.slice(match[0].length) : content;
+  const result = match ? content.slice(match[0].length) : content;
+
+  setCached(cacheKey, result);
+  return result;
 }
 
 function getSkillReferenceFiles(name, skillsSource = getSkillsSources()) {
@@ -565,6 +623,7 @@ function installForTool(
   }
 
   console.log(`✓ Installed ${installed} skill(s) to ${targetDir}`);
+  invalidateCache();
   return true;
 }
 
@@ -593,6 +652,7 @@ function deleteForTool(
 
     console.log(`  - removed ${deleted} item(s)`);
     console.log(`✓ Deleted all skill(s) from ${targetDir}`);
+    invalidateCache();
     return true;
   }
 
@@ -621,6 +681,7 @@ function deleteForTool(
   }
 
   console.log(`✓ Deleted ${deleted} skill(s) from ${targetDir}`);
+  invalidateCache();
   return true;
 }
 
@@ -948,5 +1009,8 @@ module.exports = {
   promoteOverlaySkill,
   syncOverlaySources,
   validateSkillTree,
+  getCached,
+  setCached,
+  invalidateCache,
   __test__: runtime,
 };

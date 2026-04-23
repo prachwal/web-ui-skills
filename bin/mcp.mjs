@@ -23,6 +23,28 @@ function jsonContent(value) {
   return textContent(JSON.stringify(value, null, 2));
 }
 
+function prunedSkillDetail(skill) {
+  if (!skill) return null;
+  const { path, ...rest } = skill;
+  return rest;
+}
+
+function prunedSkillList(skills) {
+  return skills.map(s => prunedSkillDetail(s));
+}
+
+function prunedResponse(obj) {
+  const { client, projectRoot, ...rest } = obj;
+  const cleaned = Object.fromEntries(
+    Object.entries(rest).filter(([, v]) => v !== null && v !== undefined)
+  );
+  return cleaned;
+}
+
+function prunedJsonContent(value) {
+  return jsonContent(prunedResponse(value));
+}
+
 function captureConsole(fn) {
   const stdout = [];
   const stderr = [];
@@ -223,7 +245,7 @@ function installOrUpdate({
   });
   const ok = result.result === 0;
 
-  return jsonContent({
+  return prunedJsonContent({
     ok,
     mode,
     client: context.client,
@@ -283,7 +305,7 @@ function removeSkillSelection({
   });
 
   if (!allTools && (!tools || tools.length === 0)) {
-    return jsonContent({
+    return prunedJsonContent({
       ok: false,
       error: 'Provide at least one tool or set allTools=true for remove operations.',
     });
@@ -291,7 +313,7 @@ function removeSkillSelection({
 
   if (allSkills) {
     const results = resolvedTools.map((tool) => removeAllSkillsFromTool(tool, targetDirs));
-    return jsonContent({
+    return prunedJsonContent({
       ok: true,
       mode: 'remove',
       client: context.client,
@@ -313,7 +335,7 @@ function removeSkillSelection({
     projectRoot: effectiveProjectRoot,
   });
 
-  return jsonContent({
+  return prunedJsonContent({
     ok: result.result === 0,
     mode: 'remove',
     client: context.client,
@@ -377,13 +399,23 @@ function createServer(options = {}) {
       description: 'Search the local skill catalog by folder name, frontmatter skill name, or description.',
       inputSchema: z.object({
         query: z.string().min(1),
+        limit: z.number().int().min(1).max(40).optional(),
+        offset: z.number().int().min(0).optional(),
       }),
     },
-    async ({ query }) => {
-      const matches = installer.searchSkills(query);
-      return jsonContent({
+    async ({ query, limit, offset }) => {
+      const allMatches = installer.searchSkills(query);
+      const effectiveLimit = limit ?? 20;
+      const effectiveOffset = offset ?? 0;
+      const total = allMatches.length;
+      const matches = allMatches.slice(effectiveOffset, effectiveOffset + effectiveLimit);
+
+      return prunedJsonContent({
         client: context.client,
         query,
+        total,
+        limit: effectiveLimit,
+        offset: effectiveOffset,
         matches: matches.map((skill) => ({
           folder: skill.dir,
           name: skill.name,
@@ -401,7 +433,7 @@ function createServer(options = {}) {
       inputSchema: z.object({}),
     },
     async () => {
-      return jsonContent({
+      return prunedJsonContent({
         client: context.client,
         groups: installer.getGroupEntries().map((group) => ({
           name: group.name,
@@ -422,7 +454,7 @@ function createServer(options = {}) {
         projectRoot: z.string().min(1).optional(),
       }),
     },
-    async (input = {}) => jsonContent({
+    async (input = {}) => prunedJsonContent({
       client: context.client,
       overlays: resolveOverlayInfo({
         project: input.project ?? context.project ?? false,
@@ -441,7 +473,7 @@ function createServer(options = {}) {
         projectRoot: z.string().min(1).optional(),
       }),
     },
-    async (input = {}) => jsonContent({
+    async (input = {}) => prunedJsonContent({
       client: context.client,
       sync: installer.syncOverlaySources({
         target: input.target || 'project',
@@ -460,7 +492,7 @@ function createServer(options = {}) {
         projectRoot: z.string().min(1).optional(),
       }),
     },
-    async (input = {}) => jsonContent({
+    async (input = {}) => prunedJsonContent({
       client: context.client,
       promote: installer.promoteOverlaySkill({
         name: input.name,
@@ -478,9 +510,9 @@ function createServer(options = {}) {
         name: z.string().min(1),
       }),
     },
-    async ({ name }) => jsonContent({
+    async ({ name }) => prunedJsonContent({
       client: context.client,
-      skill: resolveSkillDetail(name),
+      skill: prunedSkillDetail(resolveSkillDetail(name)),
     }),
   );
 
@@ -493,7 +525,7 @@ function createServer(options = {}) {
         name: z.string().min(1),
       }),
     },
-    async ({ name }) => jsonContent({
+    async ({ name }) => prunedJsonContent({
       client: context.client,
       name,
       content: installer.getSkillContent(name),
@@ -512,14 +544,14 @@ function createServer(options = {}) {
     },
     async ({ name, reference }) => {
       if (reference) {
-        return jsonContent({
+        return prunedJsonContent({
           client: context.client,
           name,
           reference,
           content: installer.getSkillReferenceContent(name, reference),
         });
       }
-      return jsonContent({
+      return prunedJsonContent({
         client: context.client,
         name,
         references: installer.getSkillReferenceFiles(name),
@@ -536,10 +568,13 @@ function createServer(options = {}) {
         name: z.string().min(1),
       }),
     },
-    async ({ name }) => jsonContent({
-      client: context.client,
-      group: resolveGroupDetail(name),
-    }),
+    async ({ name }) => {
+      const group = resolveGroupDetail(name);
+      return prunedJsonContent({
+        client: context.client,
+        group: group ? { ...group, skills: prunedSkillList(group.skills) } : null,
+      });
+    },
   );
 
   server.registerTool(
@@ -547,12 +582,26 @@ function createServer(options = {}) {
     {
       title: 'List skills info',
       description: 'List all available skills with detailed metadata, including folder, name, description, and path.',
-      inputSchema: z.object({}),
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(40).optional(),
+        offset: z.number().int().min(0).optional(),
+      }),
     },
-    async () => jsonContent({
-      client: context.client,
-      skills: installer.getAllSkillDetails(),
-    }),
+    async (input = {}) => {
+      const allSkills = installer.getAllSkillDetails();
+      const limit = input.limit ?? 20;
+      const offset = input.offset ?? 0;
+      const total = allSkills.length;
+      const skills = allSkills.slice(offset, offset + limit);
+
+      return prunedJsonContent({
+        client: context.client,
+        total,
+        limit,
+        offset,
+        skills: prunedSkillList(skills),
+      });
+    },
   );
 
   server.registerTool(

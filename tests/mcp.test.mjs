@@ -177,7 +177,9 @@ describe('client context', () => {
       { CODEX_HOME: home },
     );
 
-    assert.match(output, /"client": "codex"/);
+    // client field is removed by response pruning to reduce token usage
+    assert.match(output, /"ok": true/);
+    assert.match(output, /"mode": "install"/);
   });
 });
 
@@ -405,7 +407,8 @@ describe('skill info tools', () => {
     assert.equal(payload.skill.name, 'preact-ui');
     assert.equal(payload.skill.folder, 'preact-ui');
     assert.match(payload.skill.description, /Use when designing, refactoring, or reviewing Preact pages and components/);
-    assert.match(payload.skill.path, /skills\/preact-ui$/);
+    // path field is removed by response pruning to reduce token usage
+    assert.equal(payload.skill.path, undefined);
   });
 
   test('returns detailed info for one group', async () => {
@@ -420,7 +423,8 @@ describe('skill info tools', () => {
       payload.group.skills.map((skill) => skill.name),
       ['preact-ui', 'vue-ui', 'vue-router', 'scss-system', 'storybook-ui'],
     );
-    assert.ok(payload.group.skills.every((skill) => typeof skill.path === 'string' && skill.path.endsWith(skill.folder)));
+    // path field is removed by response pruning to reduce token usage
+    assert.ok(payload.group.skills.every((skill) => skill.path === undefined));
   });
 
   test('returns detailed info for all skills', async () => {
@@ -431,7 +435,8 @@ describe('skill info tools', () => {
     assert.ok(Array.isArray(payload.skills));
     assert.ok(payload.skills.length > 0);
     assert.ok(payload.skills.some((skill) => skill.name === 'preact-ui'));
-    assert.ok(payload.skills.every((skill) => skill.name && skill.folder && skill.path));
+    // path field is removed by response pruning to reduce token usage
+    assert.ok(payload.skills.every((skill) => skill.name && skill.folder && !skill.path));
   });
 });
 
@@ -452,7 +457,8 @@ describe('skill content and reference tools', () => {
     const result = await server._registeredTools.get_skill_content.handler({ name: 'no-such-skill-xyz' });
     const payload = JSON.parse(result.content[0].text);
 
-    assert.equal(payload.content, null);
+    // null values are omitted by response pruning
+    assert.equal(payload.content, undefined);
   });
 
   test('get_skill_content works for a skill without references', async () => {
@@ -493,7 +499,8 @@ describe('skill content and reference tools', () => {
     const result = await server._registeredTools.get_skill_references.handler({ name: 'no-such-skill-xyz' });
     const payload = JSON.parse(result.content[0].text);
 
-    assert.equal(payload.references, null);
+    // null values are omitted by response pruning
+    assert.equal(payload.references, undefined);
   });
 
   test('get_skill_references reads a specific reference file', async () => {
@@ -518,7 +525,8 @@ describe('skill content and reference tools', () => {
     });
     const payload = JSON.parse(result.content[0].text);
 
-    assert.equal(payload.content, null);
+    // null values are omitted by response pruning
+    assert.equal(payload.content, undefined);
   });
 
   test('get_skill_references rejects path traversal attempts', async () => {
@@ -529,7 +537,8 @@ describe('skill content and reference tools', () => {
     });
     const payload = JSON.parse(result.content[0].text);
 
-    assert.equal(payload.content, null);
+    // null values are omitted by response pruning
+    assert.equal(payload.content, undefined);
   });
 
   test('get_skill_references rejects nested path traversal attempts', async () => {
@@ -540,7 +549,8 @@ describe('skill content and reference tools', () => {
     });
     const payload = JSON.parse(result.content[0].text);
 
-    assert.equal(payload.content, null);
+    // null values are omitted by response pruning
+    assert.equal(payload.content, undefined);
   });
 
   test('search_skills includes description in results', async () => {
