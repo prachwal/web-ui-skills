@@ -428,6 +428,8 @@ describe('skill content and reference tools', () => {
     assert.ok(payload.references.length > 0);
     assert.ok(payload.references.every((f) => f.endsWith('.md')));
     assert.ok(payload.references.includes('mvvm.md'));
+    // Ensure references are returned in sorted order so regressions in ordering are caught
+    assert.deepEqual(payload.references, payload.references.slice().sort());
   });
 
   test('get_skill_references returns empty array for a skill with no references directory', async () => {
