@@ -340,7 +340,7 @@ function removeSkillSelection({
     projectRoot: effectiveProjectRoot,
   });
 
-  skillCache.invalidate('wus:').catch(() => {});
+  if (result.result === 0) skillCache.invalidate('wus:').catch(() => {});
   return prunedJsonContent({
     ok: result.result === 0,
     mode: 'remove',
