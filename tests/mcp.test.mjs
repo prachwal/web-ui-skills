@@ -388,6 +388,122 @@ describe('skill info tools', () => {
   });
 });
 
+describe('skill content and reference tools', () => {
+  test('get_skill_content returns markdown body without frontmatter', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_content.handler({ name: 'preact-ui' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.name, 'preact-ui');
+    assert.equal(typeof payload.content, 'string');
+    assert.ok(payload.content.length > 0);
+    assert.ok(!payload.content.startsWith('---'), 'body should not start with frontmatter delimiter');
+  });
+
+  test('get_skill_content returns null for unknown skill', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_content.handler({ name: 'no-such-skill-xyz' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.content, null);
+  });
+
+  test('get_skill_content works for a skill without references', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_content.handler({ name: 'docs-instructions' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.name, 'docs-instructions');
+    assert.equal(typeof payload.content, 'string');
+    assert.ok(payload.content.length > 0);
+  });
+
+  test('get_skill_references lists .md files for a skill with references', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({ name: 'preact-ui' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.name, 'preact-ui');
+    assert.ok(Array.isArray(payload.references));
+    assert.ok(payload.references.length > 0);
+    assert.ok(payload.references.every((f) => f.endsWith('.md')));
+    assert.ok(payload.references.includes('mvvm.md'));
+  });
+
+  test('get_skill_references returns empty array for a skill with no references directory', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({ name: 'docs-instructions' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.name, 'docs-instructions');
+    assert.deepEqual(payload.references, []);
+  });
+
+  test('get_skill_references returns null for unknown skill', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({ name: 'no-such-skill-xyz' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.references, null);
+  });
+
+  test('get_skill_references reads a specific reference file', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({
+      name: 'preact-ui',
+      reference: 'mvvm.md',
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.name, 'preact-ui');
+    assert.equal(payload.reference, 'mvvm.md');
+    assert.equal(typeof payload.content, 'string');
+    assert.ok(payload.content.length > 0);
+  });
+
+  test('get_skill_references returns null for non-existent reference file', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({
+      name: 'preact-ui',
+      reference: 'does-not-exist.md',
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.content, null);
+  });
+
+  test('get_skill_references rejects path traversal attempts', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.get_skill_references.handler({
+      name: 'preact-ui',
+      reference: '../SKILL.md',
+    });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.equal(payload.content, null);
+  });
+
+  test('search_skills includes description in results', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.search_skills.handler({ query: 'ui' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.ok(Array.isArray(payload.matches));
+    assert.ok(payload.matches.every((m) => typeof m.description === 'string'));
+  });
+
+  test('search_skills matches against description text', async () => {
+    const server = createServer();
+    const result = await server._registeredTools.search_skills.handler({ query: 'mvvm' });
+    const payload = JSON.parse(result.content[0].text);
+
+    assert.ok(Array.isArray(payload.matches));
+    assert.ok(payload.matches.length > 0);
+    const preact = payload.matches.find((m) => m.folder === 'preact-ui');
+    assert.ok(preact, 'preact-ui should match because its description contains MVVM');
+  });
+});
+
 describe('removal', () => {
   test('removes every installed skill in one tool scope', () => {
     const home = createTempHome();

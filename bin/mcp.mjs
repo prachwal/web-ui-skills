@@ -345,7 +345,7 @@ function createServer(options = {}) {
     'search_skills',
     {
       title: 'Search skills',
-      description: 'Search the local skill catalog by folder name or frontmatter skill name.',
+      description: 'Search the local skill catalog by folder name, frontmatter skill name, or description.',
       inputSchema: z.object({
         query: z.string().min(1),
       }),
@@ -358,6 +358,7 @@ function createServer(options = {}) {
         matches: matches.map((skill) => ({
           folder: skill.dir,
           name: skill.name,
+          description: skill.description,
         })),
       });
     },
@@ -452,6 +453,49 @@ function createServer(options = {}) {
       client: context.client,
       skill: resolveSkillDetail(name),
     }),
+  );
+
+  server.registerTool(
+    'get_skill_content',
+    {
+      title: 'Get skill content',
+      description: 'Get the full markdown body of a skill\'s SKILL.md file (frontmatter stripped). Call this after get_skill_info to read the actual instructions for a skill.',
+      inputSchema: z.object({
+        name: z.string().min(1),
+      }),
+    },
+    async ({ name }) => jsonContent({
+      client: context.client,
+      name,
+      content: installer.getSkillContent(name),
+    }),
+  );
+
+  server.registerTool(
+    'get_skill_references',
+    {
+      title: 'Get skill references',
+      description: 'List reference files for a skill, or read one reference file. Call without `reference` to list available filenames; call with `reference` (e.g. "types.md") to read that file\'s content.',
+      inputSchema: z.object({
+        name: z.string().min(1),
+        reference: z.string().min(1).optional(),
+      }),
+    },
+    async ({ name, reference }) => {
+      if (reference) {
+        return jsonContent({
+          client: context.client,
+          name,
+          reference,
+          content: installer.getSkillReferenceContent(name, reference),
+        });
+      }
+      return jsonContent({
+        client: context.client,
+        name,
+        references: installer.getSkillReferenceFiles(name),
+      });
+    },
   );
 
   server.registerTool(

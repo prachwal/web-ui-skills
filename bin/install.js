@@ -364,6 +364,38 @@ function getAllSkillDetails(skillsSource = getSkillsSources()) {
   }));
 }
 
+function getSkillContent(name, skillsSource = getSkillsSources()) {
+  const detail = getSkillDetail(name, skillsSource);
+  if (!detail) return null;
+  const skillFile = path.join(detail.path, SKILL_FILE);
+  if (!fs.existsSync(skillFile)) return null;
+  const content = fs.readFileSync(skillFile, 'utf8');
+  const match = content.match(/^---\n[\s\S]*?\n---\n/);
+  return match ? content.slice(match[0].length) : content;
+}
+
+function getSkillReferenceFiles(name, skillsSource = getSkillsSources()) {
+  const detail = getSkillDetail(name, skillsSource);
+  if (!detail) return null;
+  const refsDir = path.join(detail.path, 'references');
+  if (!fs.existsSync(refsDir)) return [];
+  return fs
+    .readdirSync(refsDir, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => e.name)
+    .sort();
+}
+
+function getSkillReferenceContent(name, reference, skillsSource = getSkillsSources()) {
+  const detail = getSkillDetail(name, skillsSource);
+  if (!detail) return null;
+  const refsDir = path.join(detail.path, 'references');
+  const resolved = path.resolve(refsDir, reference);
+  if (!resolved.startsWith(refsDir + path.sep)) return null;
+  if (!fs.existsSync(resolved)) return null;
+  return fs.readFileSync(resolved, 'utf8');
+}
+
 function validateSkillTree(skillsSource = getSkillsSources()) {
   const sources = normalizeSkillsSources(skillsSource);
   if (sources.length > 1) {
@@ -598,7 +630,8 @@ function searchSkills(query, skillsSource = getSkillsSources()) {
   return getSkillEntries(skillsSource).filter((skill) => {
     return (
       skill.dir.toLowerCase().includes(normalized) ||
-      skill.name.toLowerCase().includes(normalized)
+      skill.name.toLowerCase().includes(normalized) ||
+      skill.description.toLowerCase().includes(normalized)
     );
   });
 }
@@ -898,6 +931,9 @@ module.exports = {
   readSkillMetadata,
   getSkillDetail,
   getAllSkillDetails,
+  getSkillContent,
+  getSkillReferenceFiles,
+  getSkillReferenceContent,
   resolveToolDir,
   resolveProjectToolDir,
   resolveToolDirs,
