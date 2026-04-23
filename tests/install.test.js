@@ -129,6 +129,7 @@ describe('discovery', () => {
   });
 
   test('merges user overlay sources on top of bundled skills', () => {
+    installer.invalidateCache();
     const overlay = createOverlaySource();
     const sources = [installer.getSkillsSource(), overlay];
 

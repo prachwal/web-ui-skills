@@ -4,7 +4,9 @@
       "command": "npx",
       "args": ["web-ui-skills", "mcp"],
       "env": {
-        "WEB_UI_SKILLS_CLIENT": "codex"
+        "WEB_UI_SKILLS_CLIENT": "codex",
+        "REDIS_URL": "redis://127.0.0.1:6379",
+        "QDRANT_URL": "http://127.0.0.1:6333"
       }
     }
   }

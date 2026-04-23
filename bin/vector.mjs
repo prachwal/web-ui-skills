@@ -5,7 +5,7 @@ const VECTOR_SIZE = 384;
 async function loadQdrant(qdrantUrl) {
   try {
     const { QdrantClient } = await import('@qdrant/js-client-rest');
-    const client = new QdrantClient({ url: qdrantUrl });
+    const client = new QdrantClient({ url: qdrantUrl, checkCompatibility: false });
     await client.getCollections(); // ping
     return client;
   } catch {
@@ -30,11 +30,16 @@ async function embed(pipe, text) {
 async function ensureCollection(client) {
   const { collections } = await client.getCollections();
   const exists = collections.some((c) => c.name === COLLECTION);
-  if (!exists) {
-    await client.createCollection(COLLECTION, {
+  if (exists) {
+    await client.recreateCollection(COLLECTION, {
       vectors: { size: VECTOR_SIZE, distance: 'Cosine' },
     });
+    return;
   }
+
+  await client.createCollection(COLLECTION, {
+    vectors: { size: VECTOR_SIZE, distance: 'Cosine' },
+  });
 }
 
 export class VectorSearch {

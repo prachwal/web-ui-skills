@@ -66,6 +66,28 @@ Configure Claude to use skills by ensuring the skills directory is in the Claude
 
 Skills integrate with Codex through the skills directory structure. Codex discovers and applies patterns from installed skills when task context matches.
 
+For MCP usage, the recommended Codex client config is:
+
+```toml
+[mcp_servers.web-ui-skills]
+command = "npx"
+args = ["web-ui-skills", "mcp"]
+enabled = true
+
+[mcp_servers.web-ui-skills.env]
+WEB_UI_SKILLS_CLIENT = "codex"
+WEB_UI_SKILLS_PROJECT = "true"
+WEB_UI_SKILLS_PROJECT_ROOT = "/path/to/web-ui-skills"
+REDIS_URL = "redis://127.0.0.1:6379"
+QDRANT_URL = "http://127.0.0.1:6333"
+```
+
+The server works without Redis or Qdrant:
+
+- `REDIS_URL` enables shared search caching across processes.
+- `QDRANT_URL` enables semantic skill search.
+- Without either variable, the server falls back to in-memory cache and file-based search.
+
 ### Kilo
 
 Similar to other tools, Kilo discovers skills from the configured skills directory.

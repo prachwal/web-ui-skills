@@ -216,6 +216,8 @@ enabled = true
 WEB_UI_SKILLS_CLIENT = "codex"
 WEB_UI_SKILLS_PROJECT = "true"
 WEB_UI_SKILLS_PROJECT_ROOT = "/home/prachwal/src/docs/web-ui-skills"
+REDIS_URL = "redis://127.0.0.1:6379"
+QDRANT_URL = "http://127.0.0.1:6333"
 ```
 
 Another client, for example Claude, uses the same shape:
@@ -251,13 +253,25 @@ A ready-to-use file for Codex is available at [examples/codex-mcp-config.json](e
 
 It exposes tools for `search_skills`, `list_groups`, `install_skills`, `update_skills`, and `remove_skills`.
 It also exposes `get_skill_info`, `get_group_info`, and `list_skills_info` for inspecting skill and group metadata before installing anything.
+It also exposes `get_skill_content` and `get_skill_references` for reading the actual `SKILL.md` body and bundled reference files.
 It also exposes `list_overlays` for checking the repo, user, and project overlay sources before merging or installing.
 It also exposes `sync_overlays` for writing the merged overlay view into the user or project overlay directory.
 It also exposes `promote_skill` for copying one project-local skill into the user overlay directory.
 It also exposes a `web-ui-skills://guide` resource and the `how-to-use-web-ui-skills`, `install-group-plan`, `update-skills-plan`, and `remove-skills-plan` prompts for concise usage guidance.
 Set `WEB_UI_SKILLS_CLIENT` to `codex`, `claude`, `copilot`, or `kilo` so the server can tag responses and prompts with the active client.
 Pass `project: true` and `projectRoot` in MCP calls, or set `WEB_UI_SKILLS_PROJECT=true` and `WEB_UI_SKILLS_PROJECT_ROOT`, when you want the skills copied into the current project instead of global user folders.
+Set `REDIS_URL` to enable shared MCP cache across processes; if it is absent, the server falls back to an in-memory cache.
+Set `QDRANT_URL` to enable vector search for `search_skills`; if it is absent, the server falls back to local file-based search.
 Use it from an MCP client by wiring the command through standard `stdio` and the JSON config above.
+
+#### Runtime layers
+
+The MCP server now uses two optional runtime layers:
+
+- Redis caches `search_skills` responses and invalidates them after install, update, and remove operations.
+- Qdrant stores embeddings for all bundled skills and powers semantic skill search when available.
+
+Both layers are optional. The server still works without either service.
 
 MCP tools and what they do:
 
